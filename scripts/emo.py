@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+# Not quite ready for primetime. But the idea is to generate the emo@emoji@
+# table automatically at scale.
+
 from dataclasses import dataclass
 import json
 from pathlib import Path
