@@ -1,11 +1,11 @@
 # Emo: emoji for all (ahem, modern LaTeX engines)
 
-This package defines the `\emo{<emoji-name>}` macro for including color emoji in
-a document no matter the input encoding or LaTeX engine. It uses the Noto color
-emoji font if the engine supports doing so and falls back onto PDF graphics
-otherwise. When used with the `extra` option, this package also defines the
-`\lingchi` and `\YHWH` macros. When used with the `index` option, this package
-also emits raw index entries in `.`
+This package defines the `\emo{<emoji-name>}` macro for including color emoji 🎉
+in a document no matter the input encoding or LaTeX engine. It uses the Noto
+color emoji font if the engine supports doing so and falls back onto PDF
+graphics otherwise. When used with the `extra` option, this package also defines
+the `\lingchi` and `\YHWH` macros. When used with the `index` option, this
+package also emits raw index entries in `.`
 
 To extract the files embedded in [emo.dtx](emo.dtx) and build the
 [documentation](emo.pdf), run `pdflatex emo.dtx`. To install this package, place
