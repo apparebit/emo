@@ -4,19 +4,25 @@
 %%
 %% The original source files were:
 %%
+%% emo.dtx  (with options: `prelude')
+%% emo.table.dtx  (with options: `table')
 %% emo.dtx  (with options: `package')
 %% 
-%% emo: emoji for all (ahem, modern LaTeX engines)
+%% emo: emoji for all (LaTeX engines)
 %% (C) Copyright 2023 by Robert Grimm
 %% Released under LPPL v1.3c or later
 %% <https://github.com/apparebit/emo>
 %% 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{emo}[2023/02/10 v1.0 emoji for all]
-\newif\ifemo@mkextra\emo@mkextrafalse
-\DeclareOption{extra}{\emo@mkextratrue}
-\newif\ifemo@mkindex\emo@mkindexfalse
-\DeclareOption{index}{\emo@mkindextrue}
+\ProvidesPackage{emo}[2023/03/07 v0.1 emoji for all]
+
+%% ====================================
+%%  (1) Package Options & Dependencies
+%% ====================================
+\newif\ifemo@extra\emo@extrafalse
+\DeclareOption{extra}{\emo@extratrue}
+\newif\ifemo@indexing\emo@indexingfalse
+\DeclareOption{index}{\emo@indexingtrue}
 \ProcessOptions\relax
 \RequirePackage[utf8]{inputenc}
 \RequirePackage{xcolor}
@@ -26,10 +32,16 @@
 \else
 \RequirePackage{graphicx}
 \fi
-
-\ifemo@mkindex
+\ifemo@extra
+\RequirePackage{xspace}
+\fi
+\ifemo@indexing
 \RequirePackage{index}
 \fi
+
+%% =================
+%%  (2) Emoji Table
+%% =================
 \expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}
 \def\emo@emoji@biohazard{☣️}
 \expandafter\def\csname emo@emoji@check-mark\endcsname{✔️}
@@ -54,6 +66,10 @@
 \expandafter\def\csname emo@emoji@stop-sign\endcsname{🛑}
 \expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
 \def\emo@emoji@wastebasket{🗑}
+
+%% ==============================
+%%  (3) Internal & Public Macros
+%% ==============================
 \definecolor{emo@error@fg}{rgb}{1,1,1}
 \definecolor{emo@error@bg}{rgb}{.6824,.0863,.0863}
 \def\emo@error#1{%
@@ -69,7 +85,7 @@
         \emo@error{#1}%
     \fi%
 }
-\ifemo@mkindex
+\ifemo@indexing
 \newindex{emo}{edx}{end}{Emoji Index}
 \def\emo@index#1{\index[emo]{#1}}
 \else
@@ -92,27 +108,27 @@
 }
 \fi
 
-\ifemo@mkextra
+\ifemo@extra
 \ifluatex
 \newfontface\emo@chinese{NotoSansSC-Regular.otf}
 \newfontface\emo@hebrew{NotoSerifHebrew-Regular.ttf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
     \begingroup\emo@chinese \char"51CC\char"9072\endgroup%
-}
+    \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
     \begingroup\textdir TRT\emo@hebrew \char"5D9\char"5D4\char"5D5\char"5D4\endgroup%
-}
+    \xspace}
 \else
 \newcommand\lingchi{%
     \emo@index{lingchi}%
     \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/lingchi}}%
-}
+    \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
     \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/YHWH}}%
-}
+    \xspace}
 \fi
 \fi
 \endinput

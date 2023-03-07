@@ -1,28 +1,61 @@
-% \iffalse
+% \iffalse meta-comment
 %
-% emo: emoji for all (ahem, modern LaTeX engines)
+% emo: emoji for all (LaTeX engines)
 % (C) Copyright 2023 by Robert Grimm
 % Released under LPPL v1.3c or later
 % <https://github.com/apparebit/emo>
 %
+% \fi
+% \iffalse
+%<prelude>\NeedsTeXFormat{LaTeX2e}
+%<prelude>\ProvidesPackage{emo}[2023/03/07 v0.1 emoji for all]
 %<*internal>
 \iffalse
 %</internal>
+%<*buildsh>
+pdflatex emo.dtx
+makeindex -s gind.ist -o emo.ind emo.idx
+pdflatex emo.dtx
+%</buildsh>
 %<*readme>
-# Emo: emoji for all (ahem, modern LaTeX engines)
+# Emo: emoji for all (LaTeX engines)
 
 This package defines the `\emo{<emoji-name>}` macro for including color emoji 🎉
 in a document no matter the input encoding or LaTeX engine. It uses the Noto
 color emoji font if the engine supports doing so and falls back onto PDF
 graphics otherwise. When used with the `extra` option, this package also defines
-the `\lingchi` and `\YHWH` macros. When used with the `index` option, this
-package also emits raw index entries in `.`
+the `\lingchi` and `\YHWH` macros for 凌遲 and יהוה, respectively. Both macros
+preserve a subsequent space as space, no backslash needed. When used with the
+`index` option, this package also emits raw index entries in an `.edx` file.
 
 To extract the files embedded in [emo.dtx](emo.dtx) and build the
 [documentation](emo.pdf), run `pdflatex emo.dtx`. To install this package, place
 the resulting `emo.sty`, the Noto font files, and the `emo-graphics` directory
 somewhere where LaTeX can find them. In a pinch, your project directory with all
 the other source files is just fine.
+
+
+## Supported Emoji
+
+⚖️ ☣️ ✔️ 🏛 🏝 😡 🇪🇺 👁 💾 🌁 🌍 🤝 🧑‍⚖️ 1️⃣ 🏷 🔍 📟 🦜 🧾 🤖 🏟 🛑 📐 🗑
+
+Apparently, these are the most critical emoji to my writing. I'm automating the
+file conversion and record keeping for this package, so coverage will increase
+soon enough.
+
+## Implementation
+
+The implementation depends on a PDF file for each distinct emoji and LaTeX
+commands defining valid emoji names. I manually assembled currently supported
+emoji based on the [SVG sources](https://github.com/googlefonts/noto-emoji) for
+the Noto color emoji font, hence only less than 0.1% of all defined emoji are
+included. But I learned more than I wanted to about PDF files and `/Page`
+`/Group` objects that trip up `pdflatex` and [am automating](scripts/emo.py) PDF
+file generation and LaTeX command creation.
+
+While the package ships with Noto fonts for Simplified Chinese and Hebrew to
+enable the extra macros, it does not include the all critical Noto color emoji
+font. The latter is already included with major TeX distributions.
 
 
 ## Licensing
@@ -46,7 +79,7 @@ SVG files](https://github.com/googlefonts/noto-emoji).
 \askforoverwritefalse
 \preamble
 
-emo: emoji for all (ahem, modern LaTeX engines)
+emo: emoji for all (LaTeX engines)
 (C) Copyright 2023 by Robert Grimm
 Released under LPPL v1.3c or later
 <https://github.com/apparebit/emo>
@@ -54,30 +87,39 @@ Released under LPPL v1.3c or later
 \endpreamble
 \usedir{tex/latex/emo}
 \generate{
-    \file{\jobname.sty}{\from{\jobname.dtx}{package}}
+    \file{\jobname.sty}{
+        \from{\jobname.dtx}{prelude}
+        \from{\jobname.table.dtx}{table}
+        \from{\jobname.dtx}{package}
+    }
 }
 %</install>
 %<install>\endbatchfile
 %<*internal>
 \usedir{source/latex/emo}
-\generate{
-    \file{\jobname.ins}{\from{\jobname.dtx}{install}}
-}
+\generate{\file{\jobname.ins}{\from{\jobname.dtx}{install}}}
 \nopreamble\nopostamble
+\usedir{source/latex/emo}
+\generate{\file{build.sh}{\from{\jobname.dtx}{buildsh}}}
 \usedir{doc/latex/emo}
-\generate{
-    \file{README.md}{\from{\jobname.dtx}{readme}}
-}
+\generate{\file{README.md}{\from{\jobname.dtx}{readme}}}
 \endgroup
 %</internal>
-%<*package>
-\NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{emo}[2023/02/24 v0.1 emoji for all]
-%</package>
 %<*driver>
 \PassOptionsToPackage{utf8}{inputenc}
 \documentclass{ltxdoc}
 \usepackage[extra]{\jobname}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{inconsolata}
+%
+% Use BlackFoundry's Inria fonts <https://tug.org/FontCatalogue/inriaserifregular/>
+\usepackage[T1]{fontenc}
+\usepackage[lining]{InriaSerif}
+\renewcommand*\oldstylenums[1]{{\fontfamily{InriaSerif-OsF}\selectfont #1}}
+\let\oldnormalfont\normalfont
+\def\normalfont{\oldnormalfont\mdseries}
+%
 \usepackage{hyperref}
 \EnableCrossrefs
 \CodelineIndex
@@ -89,17 +131,19 @@ Released under LPPL v1.3c or later
 % \fi
 %
 % \newcommand\Emo{\textsf{Emo}}
+% \newlist{inlinenum}{enumerate*}{1}
+% \setlist[inlinenum]{label=(\alph{inlinenumi})}
 %
 % \GetFileInfo{\jobname.sty}
 %
-% \DoNotIndex{\csname,\def,\else,\endcsname,\expandafter,\fi,\ifcsname}
-% \expandafter\DoNotIndex\expandafter{\string\^}
+% \DoNotIndex{\csname,\def,\else,\endcsname,\expandafter,\fi,\ifcsname,\relax}
+% \DoNotIndex{\char,\string,\textdir,\{,\}}
 % \DoNotIndex{\begingroup,\endgroup,\ifluatex}
 % \DoNotIndex{\newcommand,\newfontface,\newif,\newindex,\index}
 % \DoNotIndex{\colorbox,\definecolor,\includegraphics,\raisebox,\textcolor}
 % \DoNotIndex{\textbackslash,\textsf,\texttt}
 %
-% \title{\Emo: emoji for all\\(ahem, modern \LaTeX\ engines)}
+% \title{\Emo: emoji for all\\(\LaTeX\ engines)}
 % \author{\href{https://apparebit.com}{Robert Grimm}}
 % \date{Version \fileversion\ (\filedate)}
 %
@@ -131,18 +175,17 @@ Released under LPPL v1.3c or later
 % \section{Usage}
 %
 % As usual, you declare your document's dependency on \Emo\ with
-% |\usepackage{emo}|. In addition to the unadorned form, \Emo\ also supports two
-% options:
+% |\usepackage{emo}|. In addition to the unadorned form, \Emo\ takes up to
+% two options:
 %
 % \begin{description}
-% \item[extra] Also define the |\lingchi| and |\YHWH| macros. They are described
-%     below.
+% \item[extra] Also define the |\lingchi| and |\YHWH| macros, which produce
+%     \lingchi and \YHWH, respectively, and are documented below.
 % \item[index] Create an emoji index tagged |emo| with the |.edx| extension for
-%     the raw index and the |.end| extension for the processed index.
+%     the raw index and the |.end| extension for the processed index. This
+%     option relies on the |index| package, generates the raw |.edx| file,
+%     but does not build or use the processed index.
 % \end{description}
-%
-% \noindent{}Note that the |index| option declares the index with the |index|
-% package and generates the |.edx| file. But it does not build the final index.
 %
 % \DescribeMacro{\emo}|\emo|\marg{emoji-name} expands to the named emoji. For
 % Lua\LaTeX, it uses the Noto color emoji font. For all other engines, it uses
@@ -155,61 +198,74 @@ Released under LPPL v1.3c or later
 % emoji names. For example, |\emo{boo}| produces \emo{boo}.
 %
 % \DescribeMacro{\lingchi}\DescribeMacro{\YHWH}The |\lingchi| and |\YHWH| macros
-% take no arguments and produce \lingchi\ and \YHWH, respectively. They are only
-% available if \Emo\ is used with the |extra| option. The former is the Chinese
-% term for ``death by a thousand cuts.'' The latter is the Tetragrammaton, the
-% Hebrew name for God. Observant Jews must not speak the name out loud. In my
-% mind that nicely mirrors that we cannot know God. I am partial to both phrases
-% and needed them when I was writing this package. So they are an extra for
-% myself.
+% take no arguments and produce \lingchi and \YHWH, respectively. They are only
+% available if \Emo\ is used with the \textsf{extra} option. The first command
+% is the Chinese term for ``death by a thousand cuts.'' While originally a
+% Chinese execution method, the term applies to surprisingly many software
+% systems as well. The second command is the Tetragrammaton, the Hebrew name for
+% God. Observant Jews do not speak the name, not even in thoughts. In my mind,
+% that nicely mirrors the very incomprehensibility of \YHWH and so I started
+% using the Tetragrammaton myself. Both macros preserve a subsequent space as
+% space, no backslash needed.
 %
-% \StopEventually{\PrintChanges\PrintIndex}
+% \StopEventually{\PrintIndex}
 %
-% \section{\Emo\ Implementation}
+% \section{Implementation}
 %
-% The two lines of the package declaration come well before documentation starts:
+% \subsection{The Prelude}
+%
+% Two following two lines come early on in the |.dtx| file containing all
+% sources for this package. After all, the version number should be visible at
+% the head of the file. The package documentation starts quite a bit later, but
+% has access to the version, \textbf{\fileversion}, and date,
+% \textbf{\filedate}.
+%
 % \begin{verbatim}
 % \NeedsTeXFormat{LaTeX2e}
 % \ProvidesPackage{emo}[...]
 % \end{verbatim}
 %
+% The rest of the prelude comes next, declaring \Emo's options and requiring its
+% dependencies.
 %    \begin{macrocode}
-%<*package>
+%<*prelude>
 %    \end{macrocode}
 %
-% \subsection{Package Options}
+% \iffalse
+
+%% ====================================
+%%  (1) Package Options & Dependencies
+%% ====================================
+% \fi
 %
-% Declare \Emo's |extra| and |index| options.
+% \subsubsection{Package Options}
 %
+% Declare \Emo's \textsf{extra} and \textsf{index} options.
 %    \begin{macrocode}
-\newif\ifemo@mkextra\emo@mkextrafalse
-\DeclareOption{extra}{\emo@mkextratrue}
-\newif\ifemo@mkindex\emo@mkindexfalse
-\DeclareOption{index}{\emo@mkindextrue}
+\newif\ifemo@extra\emo@extrafalse
+\DeclareOption{extra}{\emo@extratrue}
+\newif\ifemo@indexing\emo@indexingfalse
+\DeclareOption{index}{\emo@indexingtrue}
 \ProcessOptions\relax
 %    \end{macrocode}
 %
-% \subsection{Dependencies}
+% \subsubsection{Dependencies}
 %
 % The first dependency effectively declares this file's encoding to be UTF-8.
 % |xelatex| and |lualatex| already expect files to be encoded that way and hence
 % ignore the declaration. |pdflatex| supports other (legacy) encodings and hence
 % needs to be told.
-%
 %    \begin{macrocode}
 \RequirePackage[utf8]{inputenc}
 %    \end{macrocode}
 %
 % This package also requires |xcolor| for formatting error messages and,
-% depending on the engine, either |fontspec| or |graphicx| as emoji emitting
-% backend. |iftex| helps keep those engines apart. Finally, |index| takes care
-% of the emoji index --- iff the |index| option has been provided.
-%
-% Always including a package that is only used when there are errors is not
-% ideal. I'd prefer to only load |xcolor| if needed, but that doesn't seem
-% possible in \LaTeX. It might be polite to add an option for disabling this
+% depending on the engine, either |fontspec| or |graphicx| as the emoji-emitting
+% backend. |iftex| helps keep those engines apart. Always including a package
+% that is only used when there are errors is not ideal. I'd prefer to only load
+% |xcolor| if needed. But that doesn't seem possible in \LaTeX, at least not
+% with |\RequirePackage|. It might be polite to add an option for disabling this
 % feature.
-%
 %    \begin{macrocode}
 \RequirePackage{xcolor}
 \RequirePackage{iftex}
@@ -218,56 +274,66 @@ Released under LPPL v1.3c or later
 \else
 \RequirePackage{graphicx}
 \fi
-
-\ifemo@mkindex
+%    \end{macrocode}
+%
+% \Emo's options also have dependencies, with \textsf{extra} requiring the
+% |xspace| package and \textsf{index} requiring the |index| package:
+%    \begin{macrocode}
+\ifemo@extra
+\RequirePackage{xspace}
+\fi
+\ifemo@indexing
 \RequirePackage{index}
 \fi
+%    \end{macrocode}
+%
+% \iffalse
+
+%% =================
+%%  (2) Emoji Table
+%% =================
+% \fi
+%
+% That's it for the prelude.
+%    \begin{macrocode}
+%</prelude>
 %    \end{macrocode}
 %
 %
 % \subsection{The Emoji Table}
 %
-% Next come a large number of macros named |\emo@emoji@|\meta{emoji-name}. They
-% define the table mapping emoji names to their Unicode character sequences.
-% Since the table is (potentially) large and contains raw Unicode emoji (which
-% trip up |pdflatex|), we elide the table from documentation.
+% For each emoji with a PDF graphic in the |emo-graphics| directory, a macro
+% named |\emo@emoji@|\meta{emoji-name} expands to its Unicode sequence. With
+% over 3,000 distinct emoji in Unicode 15, \Emo\ relies on a Python script for
+% populating the graphics directory and writing the table to the |emo.table.dtx|
+% file. In the generated package file \texttt{\jobname.sty}, the contents of the
+% table file come right after the prelude.
+%
+% Since there are over 3,000 distinct emoji, the emoji table may be quite large.
+% It definitely isn't very interesting or clever. Consequently, it is elided
+% from the documentation.
+%
+% The rest of the package follows after the table.
+%    \begin{macrocode}
+%<*package>
+%    \end{macrocode}
 %
 % \iffalse
-\expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}
-\def\emo@emoji@biohazard{☣️}
-\expandafter\def\csname emo@emoji@check-mark\endcsname{✔️}
-\expandafter\def\csname emo@emoji@classical-building\endcsname{🏛}
-\expandafter\def\csname emo@emoji@desert-island\endcsname{🏝}
-\expandafter\def\csname emo@emoji@enraged-face\endcsname{😡}
-\def\emo@emoji@eu{🇪🇺}
-\def\emo@emoji@eye{👁}
-\expandafter\def\csname emo@emoji@floppy-disk\endcsname{💾}
-\def\emo@emoji@foggy{🌁}
-\expandafter\def\csname emo@emoji@globe-africa-europe\endcsname{🌍}
-\def\emo@emoji@handshake{🤝}
-\def\emo@emoji@judge{🧑‍⚖️}
-\expandafter\def\csname emo@emoji@keycap-one\endcsname{1️⃣}
-\def\emo@emoji@label{🏷}
-\expandafter\def\csname emo@emoji@loupe-left\endcsname{🔍}
-\def\emo@emoji@pager{📟}
-\def\emo@emoji@parrot{🦜}
-\def\emo@emoji@receipt{🧾}
-\def\emo@emoji@robot{🤖}
-\def\emo@emoji@stadium{🏟}
-\expandafter\def\csname emo@emoji@stop-sign\endcsname{🛑}
-\expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
-\def\emo@emoji@wastebasket{🗑}
+
+%% ==============================
+%%  (3) Internal & Public Macros
+%% ==============================
 % \fi
-%
 %
 % \subsection{Internal Macros}
 %
 % \begin{macro}{emo@error@fg}
 % \begin{macro}{emo@error@bg}
 % \begin{macro}{emo@error}
-% Define two colors and a function to format an attention-grabbing error message
-% with those two colors. If you overlook a warning in the console, you
-% \emph{will} notice the error messsage in the document, thusly formatted.
+% Define two colors and a function that uses the two colors for formatting an
+% attention-grabbing error message. If you use an invalid emoji name and
+% overlook the warning in the console, you \emph{will} notice the error messsage
+% in the document, \emo{error}, thusly formatted.
 %    \begin{macrocode}
 \definecolor{emo@error@fg}{rgb}{1,1,1}
 \definecolor{emo@error@bg}{rgb}{.6824,.0863,.0863}
@@ -285,7 +351,8 @@ Released under LPPL v1.3c or later
 %
 % \begin{macro}{emo@ifdef}
 % Validate the emoji name given as first argument. The macro expands to the
-% second argument if the name is valid and an error message otherwise.
+% second argument if the name is valid and an error message otherwise. Its
+% implementation relies on the |emo@emoji| table.
 %    \begin{macrocode}
 \def\emo@ifdef#1#2{%
     \ifcsname emo@emoji@#1\endcsname#2\else%
@@ -299,7 +366,7 @@ Released under LPPL v1.3c or later
 % \begin{macro}{emo@index}
 % If indexing is enabled, record the use of an emoji. Otherwise, do nothing.
 %    \begin{macrocode}
-\ifemo@mkindex
+\ifemo@indexing
 \newindex{emo}{edx}{end}{Emoji Index}
 \def\emo@index#1{\index[emo]{#1}}
 \else
@@ -309,7 +376,7 @@ Released under LPPL v1.3c or later
 % \end{macro}
 %
 %
-% \subsection{User Interface}
+% \subsection{Public Macros}
 %
 % \begin{macro}{emo}
 % Emit the named color emoji. Both the font-based |lualatex| and the
@@ -341,32 +408,39 @@ Released under LPPL v1.3c or later
 % \begin{macro}{lingchi}
 % \begin{macro}{YHWH}
 % The definitions for the optional |\lingchi| and |\YHWH| macros follow from
-% that of |\emo|, except that there is no argument to validate and that Hebrew
-% requires switching text direction to right-to left with |\textdir TRT|.
+% that of |\emo|, except that
+% \begin{inlinenum}
+% \item there are no arguments to validate and hence no equivalent to
+%     |\emo@ifdef|;
+% \item Hebrew is written right-to-left and hence |\YHWH| requires a
+%     |\textdir TRT|;
+% \item subsequent space should be preserved and hence the macros end
+%     with |\xspace|.
+% \end{inlinenum}
 % While it would be nice to use Unicode inside the explicit groups, doing so
 % breaks the package documentation. So |\char| it is.
 %    \begin{macrocode}
-\ifemo@mkextra
+\ifemo@extra
 \ifluatex
 \newfontface\emo@chinese{NotoSansSC-Regular.otf}
 \newfontface\emo@hebrew{NotoSerifHebrew-Regular.ttf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
     \begingroup\emo@chinese \char"51CC\char"9072\endgroup%
-}
+    \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
     \begingroup\textdir TRT\emo@hebrew \char"5D9\char"5D4\char"5D5\char"5D4\endgroup%
-}
+    \xspace}
 \else
 \newcommand\lingchi{%
     \emo@index{lingchi}%
     \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/lingchi}}%
-}
+    \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
     \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/YHWH}}%
-}
+    \xspace}
 \fi
 \fi
 %    \end{macrocode}
@@ -378,4 +452,27 @@ Released under LPPL v1.3c or later
 %    \begin{macrocode}
 %</package>
 %    \end{macrocode}
+%
 % \Finale
+%
+% \immediate\write16{ }
+% \immediate\write16{╔═════════════════════emo⊰}
+% \immediate\write16{║}
+% \immediate\write16{║ To extract the embedded build.sh, emo.ins, emo.sty,}
+% \immediate\write16{║ and README.md, run:}
+% \immediate\write16{║}
+% \immediate\write16{║\space\space\space\space\space $ pdflatex emo.dtx}
+% \immediate\write16{║}
+% \immediate\write16{║}
+% \immediate\write16{║ To build emo.sty's documentation, run:}
+% \immediate\write16{║}
+% \immediate\write16{║\space\space\space\space\space $ source build.sh}
+% \immediate\write16{║}
+% \immediate\write16{║}
+% \immediate\write16{║ To use emo.sty, put the package file, the PDF files}
+% \immediate\write16{║ in the emo-graphics directory, and both Noto fonts}
+% \immediate\write16{║ somewhere LaTeX can find them. Your project directory}
+% \immediate\write16{║ will do just fine.}
+% \immediate\write16{║}
+% \immediate\write16{╚═════════════════════emo⊰}
+% \immediate\write16{ }

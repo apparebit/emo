@@ -6,7 +6,7 @@
 %%
 %% emo.dtx  (with options: `install')
 %% 
-%% emo: emoji for all (ahem, modern LaTeX engines)
+%% emo: emoji for all (LaTeX engines)
 %% (C) Copyright 2023 by Robert Grimm
 %% Released under LPPL v1.3c or later
 %% <https://github.com/apparebit/emo>
@@ -16,7 +16,7 @@
 \askforoverwritefalse
 \preamble
 
-emo: emoji for all (ahem, modern LaTeX engines)
+emo: emoji for all (LaTeX engines)
 (C) Copyright 2023 by Robert Grimm
 Released under LPPL v1.3c or later
 <https://github.com/apparebit/emo>
@@ -24,7 +24,11 @@ Released under LPPL v1.3c or later
 \endpreamble
 \usedir{tex/latex/emo}
 \generate{
-    \file{\jobname.sty}{\from{\jobname.dtx}{package}}
+    \file{\jobname.sty}{
+        \from{\jobname.dtx}{prelude}
+        \from{\jobname.table.dtx}{table}
+        \from{\jobname.dtx}{package}
+    }
 }
 \endbatchfile
 \endinput
