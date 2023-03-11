@@ -1,7 +1,38 @@
 \documentclass[20pt]{extarticle}
 \usepackage[extra]{emo}
-\begin{document}
+\usepackage{libertine}
+\usepackage{xcolor}
 
-This is \lingchi. \YHWH, please have mercy.
+\definecolor{wordboxfg}{HTML}{A5B5C7}
+\definecolor{lineboxfg}{HTML}{E6E6E6}
+\definecolor{lineboxbg}{HTML}{F6F6F6}
+
+\newcommand\wbx[1]{\fcolorbox{wordboxfg}{white}{#1}}
+\newcommand\lbx[1]{\fcolorbox{lineboxfg}{lineboxbg}{#1}}
+
+\begin{document}
+% --------------------------------------------------------------------------------------
+
+\setlength{\fboxrule}{0.5pt}
+\setlength{\fboxsep}{0pt}
+
+\centering\noindent\lbx{
+    \wbx{It's} \wbx{\lingchi}!
+    \wbx{Please} \wbx{\YHWH},
+    \wbx{have} \wbx{mercy}
+    \wbx{\emo{desert-island}}!
+}
+
+% --------------------------------------------------------------------------------------
+
+\setlength{\fboxsep}{4pt}
+
+\vspace{1ex}
+\centering\noindent\colorbox{lineboxbg}{
+    It's \lingchi!
+    Please \YHWH,
+    have mercy
+    \emo{desert-island}!
+}
 
 \end{document}
