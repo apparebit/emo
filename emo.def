@@ -1,4 +1,4 @@
-%<*table>
+\ProvidesFile{emo.def}
 \expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}
 \def\emo@emoji@biohazard{☣️}
 \expandafter\def\csname emo@emoji@check-mark\endcsname{✔️}
@@ -17,10 +17,10 @@
 \expandafter\def\csname emo@emoji@loupe-left\endcsname{🔍}
 \def\emo@emoji@pager{📟}
 \def\emo@emoji@parrot{🦜}
+\expandafter\def\csname emo@emoji@rainbow-flag\endcsname{🏳️‍🌈}
 \def\emo@emoji@receipt{🧾}
 \def\emo@emoji@robot{🤖}
 \def\emo@emoji@stadium{🏟}
 \expandafter\def\csname emo@emoji@stop-sign\endcsname{🛑}
 \expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
 \def\emo@emoji@wastebasket{🗑}
-%</table>
