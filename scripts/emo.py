@@ -3,308 +3,251 @@
 # Not quite ready for primetime. But the idea is to generate the emo@emoji@
 # table automatically at scale.
 
-from collections.abc import Mapping
-from dataclasses import dataclass
-from functools import total_ordering
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 import re
 import shutil
 import subprocess
-from types import MappingProxyType
-from typing import Any, Iterator
+from typing import Any, Iterator, Iterable, TypeAlias
 
 
-# ======================================================================================
-# Emoji Name, Codepoints, and Display
+# --------------------------------------------------------------------------------------
+# Emoji Names
+
+PUNCTUATION = re.compile(r"""[:'"!()]""")
+SEPARATORS = re.compile(r'[ _\-]+')
+
+RENAMING = {
+    'european-union': 'eu',
+}
+
+def to_name(value: str) -> str:
+    """Turn the given string as an emoji name."""
+    return SEPARATORS.sub('-', PUNCTUATION.sub('', value.lower()))
 
 
-_PUNCTUATION = re.compile(r"""[:'"!()]""")
-_SEPARATORS = re.compile(r'[ _\-]+')
+# --------------------------------------------------------------------------------------
+# Emoji Codepoints
 
-def _to_codepoint(cp: int | str) -> int:
-    """Coerce the argument to a Unicode codepoint."""
+RECODING = {
+    (0x1F3F3, 0xFE0F, 0x200D, 0x1F308): (0x1F3F3, 0x200D, 0x1F308)
+}
+
+def to_codepoint(cp: int | str) -> int:
     if isinstance(cp, int):
         return cp
     if cp.startswith(('0x', 'U+')):
         cp = cp[2:]
     return int(cp, base=16)
 
+def to_codepoints(value: str | Iterator[int|str]) -> Sequence[int]:
+    if isinstance(value, str):
+        return tuple(ord(c) for c in value)
+    return tuple(to_codepoint(cp) for cp in value)
 
-_REGIONAL_INDICATOR_A = 0x1f1e6
-_REGIONAL_INDICATOR_Z = 0x1f1ff
-_LETTER_CAPITAL_A = ord('A')
+REGIONAL_INDICATOR_A = 0x1f1e6
+REGIONAL_INDICATOR_Z = 0x1f1ff
+LETTER_CAPITAL_A = ord('A')
 
-def _is_regional_indicator(cp: int) -> bool:
-    """Determine whether the codepoint is a regional indicator."""
-    return _REGIONAL_INDICATOR_A <= cp <= _REGIONAL_INDICATOR_Z
+def is_regional_indicator(cp: int) -> bool:
+    return REGIONAL_INDICATOR_A <= cp <= REGIONAL_INDICATOR_Z
 
-def _regional_indicator_to_letter(cp: int) -> str:
-    """Convert a regional indicator to the corresponding uppercase letter."""
-    return chr(cp - _REGIONAL_INDICATOR_A + _LETTER_CAPITAL_A)
+def regional_indicator_to_letter(cp: int) -> str:
+    return chr(cp - REGIONAL_INDICATOR_A + LETTER_CAPITAL_A)
 
 
 # --------------------------------------------------------------------------------------
+# Emoji Descriptor
 
-# Codepoints other than the fully qualified ones used by Noto emoji
-_REMAP = {
-    (0x1F3F3, 0xFE0F, 0x200D, 0x1F308): (0x1F3F3, 0x200D, 0x1F308)
-}
-
-
-@total_ordering
+@dataclass(slots=True, frozen=True, order=True)
 class Emoji:
-    """
-    An emoji. This class combines name and Unicode codepoint sequence, while
-    also supporting easy conversion to various output formats based on either.
-    """
+    """Representation of an emoji."""
+    name: str = field(compare=False)
+    codepoints: tuple[int,...]
+    display: str = field(init=False, compare=False)
 
-    def __init__(self, name: str, value: str | Iterator[int|str]) -> None:
-        """
-        Create a new emoji with the given name and value. The value may be the
-        emoji as a string or an iterator over the Unicode codepoints. Each
-        codepoint may either be an integer or its hexadecimal string
-        representation. The `0x` and `U+` prefixes are ignored.
-        """
-        self._name = _SEPARATORS.sub('-', _PUNCTUATION.sub('', name))
-        if isinstance(value, str):
-            self._codepoints = tuple(ord(c) for c in value)
-            self._display = value
-        else:
-            self._codepoints = tuple(_to_codepoint(c) for c in value)
-            self._display = ''.join(map(lambda cp: chr(cp), self._codepoints))
+    def __post_init__(self) -> None:
+        display = ''.join(map(lambda cp: chr(cp), self.codepoints))
+        object.__setattr__(self, 'display', display)
+
+    @classmethod
+    def of(cls, name: str, value: str | Iterable[int|str]) -> 'Emoji':
+        return Emoji(to_name(name), to_codepoints(value))
 
     @property
-    def name(self) -> str:
-        """The name."""
-        return self._name
+    def normal_name(self) -> str:
+        return RENAMING.get(self.name, self.name)
 
     @property
-    def codepoints(self) -> tuple[int]:
-        """The Unicode codepoints."""
-        return self._codepoints
+    def normal_codepoints(self) -> tuple[int]:
+        return RECODING.get(self.codepoints, self.codepoints)
 
     def __str__(self) -> str:
-        """The emoji itself."""
-        return self._display
-
-    def __hash__(self) -> int:
-        return hash(self._codepoints)
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, Emoji):
-            return self._codepoints == other._codepoints
-        return NotImplemented
-
-    def __lt__(self, other: object) -> bool:
-        if isinstance(other, Emoji):
-            return self._codepoints < other._codepoints
-        return NotImplemented
+        return self.display
 
     def __repr__(self) -> str:
-        return f'Emoji("{self._name}", "{self._display}")'
+        return f'Emoji.of("{self.name}", "{self.display}")'
 
     @property
     def has_compound_name(self) -> bool:
-        """Flag for the name containing more than one word."""
-        return '-' in self._name
+        return '-' in self.name
 
     @property
     def is_regional_flag(self) -> bool:
-        """Flag for the emoji representing a regional flag."""
         return (
-            len(self._codepoints) == 2 and
-            all(_is_regional_indicator(cp) for cp in self._codepoints)
+            len(self.codepoints) == 2 and
+            all(is_regional_indicator(cp) for cp in self.codepoints)
         )
 
     @property
     def unicode(self) -> str:
-        """The codepoints in Unicode `U+` notation."""
-        return ' '.join(f'U+{cp:04X}' for cp in self._codepoints)
+        return ' '.join(f'U+{cp:04X}' for cp in self.codepoints)
 
     @property
     def latex_chars(self) -> str:
-        """The codepoints in LaTeX `\char"` notation."""
-        return  ''.join(f'\char"{cp:04X}' for cp in self._codepoints)
+        return  ''.join(f'\char"{cp:04X}' for cp in self.codepoints)
 
     @property
     def svg_file(self) -> str:
-        """The SVG file within the Noto color emoji repository."""
         # Emoji for national flags leverage the country's ISO 3166-1 alpha-2 code.
         if self.is_regional_flag:
             return ''.join(
-                _regional_indicator_to_letter(cp) for cp in self._codepoints
+                regional_indicator_to_letter(cp) for cp in self.codepoints
             ) + '.svg'
 
-        codepoints = _REMAP.get(self._codepoints, self._codepoints)
-        codepoints = '_'.join(f'{cp:04x}' for cp in codepoints)
+        codepoints = '_'.join(f'{cp:04x}' for cp in self.normal_codepoints)
         return f'emoji_u{codepoints}.svg'
 
     @property
     def svg_path(self) -> str:
-        """The path to the SVG file within the Noto color emoji repository."""
         if self.is_regional_flag:
             return f'third_party/regional-flags/svg/{self.svg_file}'
         return f'svg/{self.svg_file}'
 
     @property
     def latex_table_entry(self) -> str:
-        """The table entry."""
-        prefix = (
-            f'\expandafter\def\csname emo@emoji@{self._name}\endcsname'
-            if self.has_compound_name else f'\def\emo@emoji@{self._name}'
-        )
+        if self.has_compound_name:
+            prefix = f'\expandafter\def\csname emo@emoji@{self.normal_name}\endcsname'
+        else:
+            prefix = f'\def\emo@emoji@{self.normal_name}'
+
         return f'{prefix}{{{str(self)}}}'
 
 
-# ======================================================================================
-# All Emoji
+# --------------------------------------------------------------------------------------
+# Parser for Unicode's 'emoji-test.txt' File
 
-#        Smileys & Emotion, People & Body, Component, Animals & Nature, Food & Drink,
-#   Travel & Places, Activities, Objects, Symbols, Flags.
+SubgroupTable: TypeAlias = dict[str, Sequence[Emoji]]
+GroupTable: TypeAlias = dict[str, SubgroupTable]
+NameTable: TypeAlias = dict[str, Emoji]
+CodepointTable: TypeAlias = dict[Sequence[int], Emoji]
 
-
-SHORT_GROUPS = {
-    'animals': 'animals & nature',
-    'body': 'people & body',
-    'drink': 'food & drink',
-    'food': 'food & drink',
-    'nature': 'animals & nature',
-    'people': 'people & body',
-    'places': 'travel & places',
-    'smileys': 'smileys & emotion',
-    'travel': 'travel & places',
-}
-
-
-@dataclass(frozen=True)
-class _Group:
-    name: str
-
-@dataclass(frozen=True)
-class _Subgroup:
-    name: str
-
-_EMOJI_TEST_GROUP = '# group: '
-_EMOJI_TEST_SUBGROUP = '# subgroup: '
-_EMOJI_TEST_LINE = re.compile(r"""
-    ^
-    (?P<codepoints>[0-9A-F][0-9A-F ]+[0-9A-F])
-    [ ]+ [;] [ ]
-    (?P<status>component|fully-qualified|minimally-qualified|unqualified)
-    [ ]+ [#] [ ]
-    (?P<display>[^ ]+)
-    [ ]
-    [E][0-9.]+
-    [ ]
-    (?P<name>.+)
-    $
-""", re.X)
-
-def _parse_line(line: str) -> Emoji | _Group | _Subgroup | None:
-    line = line.strip()
-    if line.startswith(_EMOJI_TEST_GROUP):
-        return _Group(line[len(_EMOJI_TEST_GROUP):])
-    elif line.startswith(_EMOJI_TEST_SUBGROUP):
-        return _Subgroup(line[len(_EMOJI_TEST_SUBGROUP):])
-    elif line == "" or line[0] == '#':
-        return None
-
-    match = _EMOJI_TEST_LINE.match(line)
-    if match.group('status') != 'fully-qualified':
-        return None
-    return Emoji(match.group('name').lower(), match.group('codepoints').split())
-
-class Registry:
+class RegistryParser:
     def __init__(self, path: str | Path) -> None:
-        self._by_name: dict[str, Emoji] = {}
-        self._groups: dict[str, dict[str, tuple[Emoji]]] = {}
+        self._path: str | Path = path
+        self._lineno = 0
+        self._by_name: NameTable = {}
+        self._by_codepoints: CodepointTable = {}
+        self._all_groups: GroupTable = {}
+        self._group: SubgroupTable | None = None
+        self._subgroup_name: str | None = None
+        self._subgroup: list[Emoji] | None = None
 
-        group: dict[str, list[Emoji]] | None = None
-        subgroup_name: str | None = None
-        subgroup: list[Emoji] | None = None
+    def error(self, msg: str) -> None:
+        raise ValueError(f'{self._path}:{self._lineno}: {msg}')
 
-        with open(path, mode='r', encoding='utf8') as file:
+    GROUP_PREFIX = '# group: '
+    SUBGROUP_PREFIX = '# subgroup: '
+    EMOJI_DECLARATION = re.compile(r"""
+        ^
+        (?P<codepoints>[0-9A-F][0-9A-F ]+[0-9A-F])
+        [ ]+ [;] [ ]
+        (?P<status>component|fully-qualified|minimally-qualified|unqualified)
+        [ ]+ [#] [ ]
+        (?P<display>[^ ]+)
+        [ ]
+        [E][0-9.]+
+        [ ]
+        (?P<name>.+)
+        $
+    """, re.X)
+
+    def parse_line(self, line: str) -> Emoji | tuple[str, str] | None:
+        line = line.strip()
+        if line.startswith(self.GROUP_PREFIX):
+            return 'group', line[len(self.GROUP_PREFIX):]
+        if line.startswith(self.SUBGROUP_PREFIX):
+            return 'subgroup', line[len(self.SUBGROUP_PREFIX):]
+        if line == '' or line[0] == '#':
+            return None
+
+        match = self.EMOJI_DECLARATION.match(line)
+        if match is None:
+            self.error('neither empty, comment, or emoji')
+        if match.group('status') != 'fully-qualified':
+            return None
+        return Emoji.of(match.group('name'), match.group('codepoints').split())
+
+    def enter_group(self, name: str) -> None:
+        assert self._subgroup_name is None
+        self._group = self._all_groups.setdefault(name, {})
+
+    def enter_subgroup(self, name: str) -> None:
+        assert self._subgroup_name is None
+        if self._group is None:
+            self.error('subgroup without prior group declaration')
+        self._subgroup_name = name
+        self._subgroup = list(self._group[name]) if name in self._group else []
+
+    def maybe_exit_subgroup(self) -> None:
+        if self._subgroup_name is not None:
+            self._group[self._subgroup_name] = tuple(self._subgroup)
+            self._subgroup_name = None
+            self._subgroup = None
+
+    def add_emoji(self, emoji: Emoji) -> None:
+        if self._subgroup_name is None:
+            self.error('emoji without prior group and subgroup declaration')
+        if emoji.name in self._by_name:
+            self.error(f'duplicate declaration of emoji named "{emoji.name}"')
+        if emoji.codepoints in self._by_codepoints:
+            self.error(f'duplicate declaration of emoji {emoji.unicode}')
+
+        self._by_name[emoji.name] = emoji
+        self._by_codepoints[emoji.codepoints] = emoji
+        self._subgroup.append(emoji)
+
+    def run(self) -> tuple[NameTable, CodepointTable, GroupTable]:
+        assert self._lineno == 0
+
+        with open(self._path, mode='r', encoding='utf8') as file:
             while (line := file.readline()) != '':
-                item = _parse_line(line[:-1])
+                self._lineno += 1
+                item = self.parse_line(line[:-1])
                 if item is None:
                     continue
-
-                name = item.name.lower()
-                if isinstance(item, _Group):
-                    if subgroup_name is not None:
-                        group[subgroup_name] = tuple(subgroup)
-                    group = self._groups.setdefault(name, {})
-                    subgroup_name = None
-                    subgroup = None
-                    continue
-                if isinstance(item, _Subgroup):
-                    if group is None:
-                        raise ValueError(
-                            f'Subgroup {item.name} listed '
-                            f'without leading `# group:` in "{path}"'
-                        )
-                    if subgroup_name is not None:
-                        group[subgroup_name] = tuple(subgroup)
-                    subgroup_name = name
-                    subgroup = list(group[name]) if name in group else []
+                if isinstance(item, Emoji):
+                    self.add_emoji(item)
                     continue
 
-                if subgroup is None:
-                    raise ValueError(
-                        f'Emoji {str(item)} ({item.unicode}) listed '
-                        f'without leading `# subgroup:` in "{path}"'
-                    )
-                if name in self._by_name:
-                    other = self._by_name[name]
-                    raise ValueError(
-                        f'Emoji {str(item)} ({item.unicode}) and {str(other)} '
-                        f'({other.unicode}) are both named "{item.name}" '
-                        f'in listing "{path}"'
-                    )
-                self._by_name[name] = item
-                subgroup.append(item)
+                self.maybe_exit_subgroup()
+                grouping, name = item
+                if grouping == 'group':
+                    self.enter_group(name)
+                else:
+                    self.enter_subgroup(name)
 
-    def groups(self) -> set[str]:
-        """
-        Smileys & Emotion, People & Body, Component, Animals & Nature, Food & Drink,
-        Travel & Places, Activities, Objects, Symbols, Flags.
-        """
-        return self._groups.keys()
+            self.maybe_exit_subgroup()
 
-    def subgroups(self, group: str) -> set[str]:
-        return self._groups[group.lower()].keys()
+        return self._by_name, self._by_codepoints, self._all_groups
 
-    def subgroup(self, group: str, subgroup: str) -> tuple[Emoji]:
-        return self._groups[group.lower()][subgroup.lower()]
 
-    def emoji(self) -> frozenset[Emoji]:
-        return self._by_name.values()
-
-    def select(self, groupings: list[str | tuple[str] | tuple[str,str]]) -> set[Emoji]:
-        selected_emoji: set[Emoji] = set()
-
-        for grouping in groupings:
-            if isinstance(grouping, str):
-                grouping = (grouping,)
-            if len(grouping) == 1:
-                group = self._groups[grouping[0].lower()]
-                for subgroup in group.values():
-                    selected_emoji.add(subgroup)
-                continue
-            selected_emoji.add(
-                self.subgroup(
-                    grouping[0].lower(),
-                    grouping[1].lower()
-                )
-            )
-
-        return selected_emoji
-
-# ======================================================================================
+# --------------------------------------------------------------------------------------
 # SVG to PDF Conversion
 
-def _remove_page_group_object(document: dict) -> dict | None:
+def remove_page_group_object(document: dict) -> dict | None:
     """Remove the /Page /Group object from the document in qpdf's JSON format."""
 
     objects = document['qpdf'][1]
@@ -339,12 +282,11 @@ def _remove_page_group_object(document: dict) -> dict | None:
     del page['/Group']
     return document
 
-def _remove_page_group(path: Path) -> bool:
-    """Remove the /Page /Group object from the file in qpdf's JSON format."""
+def remove_page_group(path: Path) -> bool:
     with open(path, mode='r', encoding='utf8') as file:
         document = json.load(file)
 
-    document = _remove_page_group_object(document)
+    document = remove_page_group_object(document)
     if document is None:
         return False
 
@@ -354,11 +296,10 @@ def _remove_page_group(path: Path) -> bool:
     tmp.replace(path)
     return True
 
-def _fix_pdf(qpdf: str, path: Path) -> None:
-    """Prepare the PDF file for inclusion with pdflatex."""
+def fix_pdf(qpdf: str, path: Path) -> None:
     json_path = path.with_suffix('.json')
     subprocess.run([qpdf, str(path), '--json-output', str(json_path)], check=True)
-    changed = _remove_page_group(json_path)
+    changed = remove_page_group(json_path)
     if not changed:
         return
 
@@ -366,15 +307,10 @@ def _fix_pdf(qpdf: str, path: Path) -> None:
     subprocess.run([qpdf, str(json_path), '--json-input', str(tmp)], check=True)
     tmp.replace(path)
 
-def _convert_svg_to_pdf(rsvg_convert: str, source: Path, target: Path) -> None:
-    """Convert the source SVG to the target PDF."""
+def convert_svg_to_pdf(rsvg_convert: str, source: Path, target: Path) -> None:
     subprocess.run([rsvg_convert, str(source), '-f', 'Pdf', '-o', str(target)], check=True)
 
-def _which(tool: str) -> str:
-    """
-    Determine the absolute path to given command line tool, raising a file not
-    found error if it cannot be found in the current path.
-    """
+def which(tool: str) -> str:
     path = shutil.which(tool)
     if path is None:
         raise FileNotFoundError(tool)
@@ -382,12 +318,6 @@ def _which(tool: str) -> str:
 
 @dataclass(frozen=True)
 class Converter:
-    """
-    A converter encapsulates the state that remains constant from emoji to
-    emoji, namely the path to the qpdf and rsvg_convert command line tools as
-    well as the source and target directories. Note that the source directory is
-    the *root directory* of the Noto color emoji sources.
-    """
     qpdf: str
     rsvg_convert: str
     source_dir: Path
@@ -400,8 +330,8 @@ class Converter:
         target_dir: Path | str | None = None
     ) -> 'Converter':
         return cls(
-            qpdf = _which('qpdf'),
-            rsvg_convert = _which('rsvg-convert'),
+            qpdf = which('qpdf'),
+            rsvg_convert = which('rsvg-convert'),
             source_dir = Path(source_dir),
             target_dir = Path.cwd() if target_dir is None else Path(target_dir),
         )
@@ -410,19 +340,66 @@ class Converter:
         source = self.source_dir / emoji.svg_path
         target = self.target_dir / f'{emoji.name}.pdf'
         if not target.exists():
-            _convert_svg_to_pdf(self.rsvg_convert, source, target)
-            _fix_pdf(self.qpdf, target)
+            convert_svg_to_pdf(self.rsvg_convert, source, target)
+            fix_pdf(self.qpdf, target)
         return target
 
 
-emoji, groups = parse('./scripts/emoji-test.txt')
-print(len(emoji), 'emoji')
+# --------------------------------------------------------------------------------------
 
-names = set()
-for e in emoji:
-    if e.name in names:
-        print('duplicate name', e.name)
-    names.add(e.name)
+SHORT_GROUPS = {
+    'animals': 'animals & nature',
+    'body': 'people & body',
+    'drink': 'food & drink',
+    'food': 'food & drink',
+    'nature': 'animals & nature',
+    'people': 'people & body',
+    'places': 'travel & places',
+    'smileys': 'smileys & emotion',
+    'travel': 'travel & places',
+}
+
+class Registry:
+    def __init__(self, path: str | Path) -> None:
+        pass
+
+    def groups(self) -> set[str]:
+        return self._groups.keys()
+
+    def subgroups(self, group: str) -> set[str]:
+        return self._groups[group.lower()].keys()
+
+    def subgroup(self, group: str, subgroup: str) -> tuple[Emoji]:
+        return self._groups[group.lower()][subgroup.lower()]
+
+    def emoji(self) -> frozenset[Emoji]:
+        return self._by_name.values()
+
+    def select(self, groupings: list[str | tuple[str] | tuple[str,str]]) -> set[Emoji]:
+        selected_emoji: set[Emoji] = set()
+
+        for grouping in groupings:
+            if isinstance(grouping, str):
+                grouping = (grouping,)
+            if len(grouping) == 1:
+                group = self._groups[grouping[0].lower()]
+                for subgroup in group.values():
+                    selected_emoji.add(subgroup)
+                continue
+            selected_emoji.add(
+                self.subgroup(
+                    grouping[0].lower(),
+                    grouping[1].lower()
+                )
+            )
+
+        return selected_emoji
+
+
+# --------------------------------------------------------------------------------------
+
+by_name, by_codepoints, by_groups = RegistryParser('./scripts/emoji-test.txt').run()
+print(len(by_name), 'emoji')
 
 # emoji, groups = parse('./scripts/emoji-test.txt')
 # for group, subgroups in groups.items():
@@ -435,12 +412,9 @@ for e in emoji:
 #     print()
 
 
-
-
-
-lgbt = Emoji('lgbt flag', '🏳️‍🌈')
-converter = Converter.create('/Users/rgrimm/Downloads/noto-emoji-2.038')
-print(converter)
+lgbt = Emoji.of('rainbow flag', '🏳️‍🌈')
+#converter = Converter.create('/Users/rgrimm/Downloads/noto-emoji-2.038')
+#print(converter)
 #print(converter(lgbt))
 
 
