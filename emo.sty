@@ -4,8 +4,6 @@
 %%
 %% The original source files were:
 %%
-%% emo.dtx  (with options: `prelude')
-%% emo.table.dtx  (with options: `table')
 %% emo.dtx  (with options: `package')
 %% 
 %% emo: emoji for all (LaTeX engines)
@@ -14,62 +12,28 @@
 %% <https://github.com/apparebit/emo>
 %% 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{emo}[2023/03/07 v0.1 emoji for all]
-
-%% ====================================
-%%  (1) Package Options & Dependencies
-%% ====================================
+\ProvidesPackage{emo}
+    [2023/03/07 v0.1 emoji for all]
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
 \DeclareOption{index}{\emo@indexingtrue}
 \ProcessOptions\relax
 \RequirePackage[utf8]{inputenc}
-\RequirePackage{xcolor}
 \RequirePackage{iftex}
 \ifluatex
 \RequirePackage{fontspec}
 \else
 \RequirePackage{graphicx}
 \fi
+\RequirePackage{xcolor}
 \ifemo@extra
 \RequirePackage{xspace}
 \fi
 \ifemo@indexing
 \RequirePackage{index}
 \fi
-
-%% =================
-%%  (2) Emoji Table
-%% =================
-\expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}
-\def\emo@emoji@biohazard{☣️}
-\expandafter\def\csname emo@emoji@check-mark\endcsname{✔️}
-\expandafter\def\csname emo@emoji@classical-building\endcsname{🏛}
-\expandafter\def\csname emo@emoji@desert-island\endcsname{🏝}
-\expandafter\def\csname emo@emoji@enraged-face\endcsname{😡}
-\def\emo@emoji@eu{🇪🇺}
-\def\emo@emoji@eye{👁}
-\expandafter\def\csname emo@emoji@floppy-disk\endcsname{💾}
-\def\emo@emoji@foggy{🌁}
-\expandafter\def\csname emo@emoji@globe-africa-europe\endcsname{🌍}
-\def\emo@emoji@handshake{🤝}
-\def\emo@emoji@judge{🧑‍⚖️}
-\expandafter\def\csname emo@emoji@keycap-one\endcsname{1️⃣}
-\def\emo@emoji@label{🏷}
-\expandafter\def\csname emo@emoji@loupe-left\endcsname{🔍}
-\def\emo@emoji@pager{📟}
-\def\emo@emoji@parrot{🦜}
-\def\emo@emoji@receipt{🧾}
-\def\emo@emoji@robot{🤖}
-\def\emo@emoji@stadium{🏟}
-\expandafter\def\csname emo@emoji@stop-sign\endcsname{🛑}
-\expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
-\def\emo@emoji@wastebasket{🗑}
-
-%% ==============================
-%%  (3) Internal & Public Macros
-%% ==============================
+\input{emo.def}
 \definecolor{emo@error@fg}{rgb}{1,1,1}
 \definecolor{emo@error@bg}{rgb}{.6824,.0863,.0863}
 \def\emo@error#1{%
@@ -107,11 +71,10 @@
     }%
 }
 \fi
-
 \ifemo@extra
 \ifluatex
-\newfontface\emo@chinese{NotoSansSC-Regular.otf}
-\newfontface\emo@hebrew{NotoSerifHebrew-Regular.ttf}
+\newfontface\emo@chinese{NotoSerifTC-Regular.otf}
+\newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
     \begingroup\emo@chinese \char"51CC\char"9072\endgroup%

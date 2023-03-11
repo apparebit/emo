@@ -1,40 +1,57 @@
 # Emo: emoji for all (LaTeX engines)
 
-This package defines the `\emo{<emoji-name>}` macro for including color emoji 🎉
+This package defines the `\emo{<emoji-name>}` macro for including color emoji
 in a document no matter the input encoding or LaTeX engine. It uses the Noto
 color emoji font if the engine supports doing so and falls back onto PDF
-graphics otherwise. When used with the `extra` option, this package also defines
-the `\lingchi` and `\YHWH` macros for 凌遲 and יהוה, respectively. Both macros
-preserve a subsequent space as space, no backslash needed. When used with the
-`index` option, this package also emits raw index entries in an `.edx` file.
+graphics otherwise.  🎉
 
-To extract the files embedded in [emo.dtx](emo.dtx) and build the
+When emo is used with the `extra` option, this package also defines the
+`\lingchi` and `\YHWH` macros for 凌遲 and יהוה, respectively. Both macros
+preserve a subsequent space as space, no backslash needed. When used with the
+`index` option, this package also emits a raw index entry for each use of an
+emoji into an `.edx` file.
+
+## Installation
+
+To extract files embedded in [emo.dtx](emo.dtx) and also rebuild the
 [documentation](emo.pdf), run `pdflatex emo.dtx`. To install this package, place
-the resulting `emo.sty`, the Noto font files, and the `emo-graphics` directory
-somewhere where LaTeX can find them. In a pinch, your project directory with all
-the other source files is just fine.
+`emo.def`, `emo.sty`, `NotoSerifTC-Regular.otf`, and the contents of the
+`emo-graphics` directory somewhere where LaTeX can find them. In a pinch, your
+project directory will do just fine.
 
 ## Supported Emoji
 
-⚖️ ☣️ ✔️ 🏛 🏝 😡 🇪🇺 👁 💾 🌁 🌍 🤝 🧑‍⚖️ 1️⃣ 🏷 🔍 📟 🦜 🧾 🤖 🏟 🛑 📐 🗑
+⚖️ ☣️ ✔️ 🏛 🏝 😡 🇪🇺 👁 💾 🌁 🌍 🤝 🧑‍⚖️ 1️⃣ 🏷 🔍 📟 🦜 🏳️‍🌈 🧾 🤖 🏟 🛑 📐 🗑
 
-Apparently, these are the most critical emoji to my writing. I'm automating the
-file conversion and record keeping for this package, so coverage will increase
-soon enough.
+The above emoji are named balance-scale, biohazard, check-mark,
+classical-building, desert-island, enraged-face, eu, eye, floppy-disk, foggy,
+globe-africa-europe, handshake, judge, keycap-one, label, loupe-left, pager,
+parrot, rainbow-flag, receipt, robot, stadium, stop-sign, triangular-ruler, and
+wastebasket. These are the same names as their Unicode names, only interword
+spaces have been replaced by dashes.
 
 ## Implementation
 
-The implementation depends on a PDF file for each distinct emoji and LaTeX
-commands defining valid emoji names. I manually assembled currently supported
-emoji based on the [SVG sources](https://github.com/googlefonts/noto-emoji) for
-the Noto color emoji font, hence only less than 0.1% of all defined emoji are
-included. But I learned more than I wanted to about PDF files and `/Page`
-`/Group` objects that trip up `pdflatex` and [am automating](scripts/emo.py) PDF
-file generation and LaTeX command creation.
+For each emoji, the implementation requires an entry in the emoji table in
+`emo.def` as well as a PDF file with the emoji's likeness. For consistency, emo
+uses the same artwork under LuaLaTeX and as fallback. The only difference is
+that the fallback version relies on PDF graphics that were previously converted
+from tbe SVG source files included with the source code for [Noto's color
+emoji](https://github.com/googlefonts/noto-emoji). I manually prepared the
+initial set of 25 emoji. Since that's less than 0.1% of all emoji, there
+obviously remains a lot of conversion work. But that work also is eminently
+automatable and a Python script doing just that is almost done.
 
-While the package ships with Noto fonts for Simplified Chinese and Hebrew to
-enable the extra macros, it does not include the all critical Noto color emoji
-font. The latter is already included with major TeX distributions.
+The conversion is more involved than just using `rsvg-convert` to turn SVG into
+PDF files. As it turns out, PDF files created by that command line tool may
+include a `\Page` `\Group` object that confuses `pdflatex`. Hence, the
+[conversion script](scripts/emo.py) leverages `qpdf` to automatically remove
+these objects again (but only those objects). The conversion script also
+leverages the `emoji-text.txt` file from Unicode 15 for identifying and
+potentially converting all standardized emoji.
+
+Emo's [package documentation](emo.pdf) includes detailed documentation on the
+implementation of this package.
 
 ## Licensing
 

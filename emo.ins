@@ -23,13 +23,7 @@ Released under LPPL v1.3c or later
 
 \endpreamble
 \usedir{tex/latex/emo}
-\generate{
-    \file{\jobname.sty}{
-        \from{\jobname.dtx}{prelude}
-        \from{\jobname.table.dtx}{table}
-        \from{\jobname.dtx}{package}
-    }
-}
+\generate{\file{\jobname.sty}{\from{\jobname.dtx}{package}}}
 \endbatchfile
 \endinput
 %%
