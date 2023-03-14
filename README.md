@@ -11,47 +11,34 @@ preserve a subsequent space as space, no backslash needed. When used with the
 `index` option, this package also emits a raw index entry for each use of an
 emoji into an `.edx` file.
 
-## Installation
+To **extract files** embedded in [emo.dtx](emo.dtx) and also rebuild the
+[documentation](emo.pdf), run `pdflatex emo.dtx`.
 
-To extract files embedded in [emo.dtx](emo.dtx) and also rebuild the
-[documentation](emo.pdf), run `pdflatex emo.dtx`. To install this package, place
-`emo.def`, `emo.sty`, `NotoSerifTC-Regular.otf`, and the contents of the
-`emo-graphics` directory somewhere where LaTeX can find them. In a pinch, your
-project directory will do just fine.
+To **configure the emoji**, run `python3 config/emo.py` with appropriate
+arguments. The [package documentation](emo.pdf) explains the configuration tool
+in detail, but you may find the `-h` for help option sufficient to get started.
+
+To **install this package**, place `emo.def`, `emo.sty`,
+`NotoSerifTC-Regular.otf`, and the contents of the `emo-graphics` directory
+somewhere where LaTeX can find them. In a pinch, your project directory will do
+just fine.
 
 ## Supported Emoji
 
-⚖️ ☣️ ✔️ 🏛 🏝 😡 🇪🇺 👁 💾 🌁 🌍 🤝 🧑‍⚖️ 1️⃣ 🏷 🔍 📟 🦜 🏳️‍🌈 🧾 🤖 🏟 🛑 📐 🗑
+By default, emo supports only a few emoji:
 
-The above emoji are named balance-scale, biohazard, check-mark,
-classical-building, desert-island, enraged-face, eu, eye, floppy-disk, foggy,
-globe-africa-europe, handshake, judge, keycap-one, label, loupe-left, pager,
-parrot, rainbow-flag, receipt, robot, stadium, stop-sign, triangular-ruler, and
-wastebasket. These are the same names as their Unicode names, only interword
-spaces have been replaced by dashes.
+1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🦜 🧑‍⚖️ 🧻 🧾
 
-## Implementation
+Their names are keycap-one, biohazard, balance-scale, check-mark, eu, foggy,
+globe-africa-europe, classical-building, desert-island, stadium, rainbow-flag,
+label, eye, busts, floppy-disk, triangular-ruler, pager, loupe-left, detective,
+wastebasket, enraged-face, stop-sign, robot, handshake, parrot, judge,
+roll-of-paper, and receipt.
 
-For each emoji, the implementation requires an entry in the emoji table in
-`emo.def` as well as a PDF file with the emoji's likeness. For consistency, emo
-uses the same artwork under LuaLaTeX and as fallback. The only difference is
-that the fallback version relies on PDF graphics that were previously converted
-from tbe SVG source files included with the source code for [Noto's color
-emoji](https://github.com/googlefonts/noto-emoji). I manually prepared the
-initial set of 25 emoji. Since that's less than 0.1% of all emoji, there
-obviously remains a lot of conversion work. But that work also is eminently
-automatable and a Python script doing just that is almost done.
-
-The conversion is more involved than just using `rsvg-convert` to turn SVG into
-PDF files. As it turns out, PDF files created by that command line tool may
-include a `\Page` `\Group` object that confuses `pdflatex`. Hence, the
-[conversion script](scripts/emo.py) leverages `qpdf` to automatically remove
-these objects again (but only those objects). The conversion script also
-leverages the `emoji-text.txt` file from Unicode 15 for identifying and
-potentially converting all standardized emoji.
-
-Emo's [package documentation](emo.pdf) includes detailed documentation on the
-implementation of this package.
+The [package's documentation](emo.pdf) explains the underlying naming scheme and
+also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)
+script takes care of the heavy lifting during reconfiguration, converting SVG
+into PDF files and generating an updated `emo.def` file.
 
 ## Licensing
 
