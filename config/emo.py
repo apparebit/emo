@@ -557,19 +557,19 @@ def ensure_local_noto_emoji(noto_path: Path, verbose: bool = False) -> None:
             print(f'info: seemingly valid Noto emoji sources at "{noto_path}"')
         return
 
-    noto_path.mkdir(parents=True)
     noto_zip = noto_path.with_name('noto-emoji.zip')
-
     if not noto_zip.exists():
         if verbose:
             print(f'info: downloading Noto emoji sources from "{NOTO_REPOSITORY}"')
         with urlopen(NOTO_REPOSITORY) as response, open(noto_zip, mode='wb') as file:
             shutil.copyfileobj(response, file)
 
-    if not noto_path.exists():
-        if verbose:
-            print(f'info: unpacking Noto emoji sources into "{noto_path}"')
-        shutil.unpack_archive(noto_zip, noto_path, 'zip')
+    # With archive representing main branch, it is unpacked into
+    # noto-emoji-main. We fix that after unpacking.
+    if verbose:
+        print(f'info: unpacking Noto emoji sources into "{noto_path}"')
+    shutil.unpack_archive(noto_zip, noto_path.parent, 'zip')
+    noto_path.with_name('noto-emoji-main').rename(noto_path)
 
 
 # --------------------------------------------------------------------------------------
@@ -691,6 +691,10 @@ suitably named PDF files exist in the graphics directory, they are not recreated
 but included in the emoji table.
 """
 
+def resolved_path(path: str) -> Path:
+    return Path(path).resolve()
+
+
 def create_parser() -> ArgumentParser:
     parser = ArgumentParser(
         description=DESCRIPTION,
@@ -723,28 +727,28 @@ def create_parser() -> ArgumentParser:
     )
     parser.add_argument(
         '--registry',
-        type=Path,
+        type=resolved_path,
         default='config/emoji-test.txt',
         metavar='PATH',
         help='use path for file with Unicode emoji sequences',
     )
     parser.add_argument(
         '--noto-emoji',
-        type=Path,
+        type=resolved_path,
         default='noto-emoji',
         metavar='PATH',
         help='use path for directory with Noto color emoji sources',
     )
     parser.add_argument(
         '--graphics',
-        type=Path,
+        type=resolved_path,
         default='emo-graphics',
         metavar='PATH',
         help='use path for directory with generated PDF graphics',
     )
     parser.add_argument(
         '--latex-table',
-        type=Path,
+        type=resolved_path,
         default='emo.def',
         metavar='PATH',
         help='use path for file with LaTeX emoji table',
@@ -847,7 +851,7 @@ def main() -> None:
             print('info:  ' + ' '.join(emoji.display for emoji in all_emoji))
 
     except Exception as x:
-        print(x)
+        print(f'error: {x}')
 
 
 if __name__ == '__main__':
