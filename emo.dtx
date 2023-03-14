@@ -36,51 +36,35 @@ preserve a subsequent space as space, no backslash needed. When used with the
 `index` option, this package also emits a raw index entry for each use of an
 emoji into an `.edx` file.
 
+To **extract files** embedded in [emo.dtx](emo.dtx) and also rebuild the
+[documentation](emo.pdf), run `pdflatex emo.dtx`.
 
-## Installation
+To **configure the emoji**, run `python3 config/emo.py` with appropriate
+arguments. The [package documentation](emo.pdf) explains the configuration tool
+in detail, but you may find the `-h` for help option sufficient to get started.
 
-To extract files embedded in [emo.dtx](emo.dtx) and also rebuild the
-[documentation](emo.pdf), run `pdflatex emo.dtx`. To install this package, place
-`emo.def`, `emo.sty`, `NotoSerifTC-Regular.otf`, and the contents of the
-`emo-graphics` directory somewhere where LaTeX can find them. In a pinch, your
-project directory will do just fine.
+To **install this package**, place `emo.def`, `emo.sty`,
+`NotoSerifTC-Regular.otf`, and the contents of the `emo-graphics` directory
+somewhere where LaTeX can find them. In a pinch, your project directory will do
+just fine.
 
 
 ## Supported Emoji
 
-⚖️ ☣️ ✔️ 🏛 🏝 😡 🇪🇺 👁 💾 🌁 🌍 🤝 🧑‍⚖️ 1️⃣ 🏷 🔍 📟 🦜 🏳️‍🌈 🧾 🤖 🏟 🛑 📐 🗑
+By default, emo supports only a few emoji:
 
-The above emoji are named balance-scale, biohazard, check-mark,
-classical-building, desert-island, enraged-face, eu, eye, floppy-disk, foggy,
-globe-africa-europe, handshake, judge, keycap-one, label, loupe-left, pager,
-parrot, rainbow-flag, receipt, robot, stadium, stop-sign, triangular-ruler, and
-wastebasket. These are the same names as their Unicode names, only interword
-spaces have been replaced by dashes.
+1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🦜 🧑‍⚖️ 🧻 🧾
 
+Their names are keycap-one, biohazard, balance-scale, check-mark, eu, foggy,
+globe-africa-europe, classical-building, desert-island, stadium, rainbow-flag,
+label, eye, busts, floppy-disk, triangular-ruler, pager, loupe-left, detective,
+wastebasket, enraged-face, stop-sign, robot, handshake, parrot, judge,
+roll-of-paper, and receipt.
 
-## Implementation
-
-For each emoji, the implementation requires an entry in the emoji table in
-`emo.def` as well as a PDF file with the emoji's likeness. For consistency, emo
-uses the same artwork under LuaLaTeX and as fallback. The only difference is
-that the fallback version relies on PDF graphics that were previously converted
-from tbe SVG source files included with the source code for [Noto's color
-emoji](https://github.com/googlefonts/noto-emoji). I manually prepared the
-initial set of 25 emoji. Since that's less than 0.1% of all emoji, there
-obviously remains a lot of conversion work. But that work also is eminently
-automatable and a Python script doing just that is almost done.
-
-The conversion is more involved than just using `rsvg-convert` to turn SVG into
-PDF files. As it turns out, PDF files created by that command line tool may
-include a `\Page` `\Group` object that confuses `pdflatex`. Hence, the
-[conversion script](scripts/emo.py) leverages `qpdf` to automatically remove
-these objects again (but only those objects). The conversion script also
-leverages the `emoji-text.txt` file from Unicode 15 for identifying and
-potentially converting all standardized emoji.
-
-Emo's [package documentation](emo.pdf) includes detailed documentation on the
-implementation of this package.
-
+The [package's documentation](emo.pdf) explains the underlying naming scheme and
+also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)
+script takes care of the heavy lifting during reconfiguration, converting SVG
+into PDF files and generating an updated `emo.def` file.
 
 
 ## Licensing
@@ -164,6 +148,14 @@ Released under LPPL v1.3c or later
 %
 % \newlist{inlinenum}{enumerate*}{1}
 % \setlist[inlinenum]{label=(\alph{inlinenumi})}
+% \newenvironment{verbaish}{%
+%     \ttfamily%
+%     \obeylines%
+%     \obeyspaces%
+%     \vspace{\the\parskip}%
+%     \setlength{\parskip}{0pt}%
+%     \setlength{\parindent}{2em}%
+% }{}
 %
 % \GetFileInfo{\jobname.dtx}
 %
@@ -193,45 +185,47 @@ Released under LPPL v1.3c or later
 % \tableofcontents
 %
 %
-% ^^A ----------------------------------------------------------------------------------
+% ^^A ==================================================================================
 % \section{Installation}
 %
-% To install the emo package, first extract embedded files from |emo.dtx| by
-% executing:
-% \begingroup\obeylines
-% |    $ pdflatex emo.dtx|
-% \endgroup
+% Installation of the emo package is fairly straightforward, though it does
+% involve a lot more files than usual.
 %
-% Next, building emo's documentation with indices requires executing:
-% \begingroup\obeylines
-% |    $ source build.sh|
-% \endgroup
-%
-% Finally, actually using emo requires that you put the following files
-% somewhere LaTeX can find them. While your current project's directory will do
-% in a pinch, following the
-% \href{https://en.wikibooks.org/wiki/LaTeX/Installing_Extra_Packages}{TeX
-% Directory Structure} avoids clutter and ensures that any TeX tool can find
-% emo's files when needed. They are:
 % \begin{enumerate}
-% \item |emo.sty| with package implementation;
-% \item |emo.def| with emoji table;
+% \item Start by extracting this package's files from |emo.dtx| by running:
+% \begin{verbaish}
+% \$ pdflatex emo.dtx
+% \end{verbaish}
+%
+% \item Build the package documentation with indices by running:
+% \begin{verbaish}
+% \$ source build.sh
+% \end{verbaish}
+%
+% \item If you want to reconfigure the supported emoji, see \S\ref{sec:config}
+% below.
+%
+% \item Put the following files somewhere LaTeX can find them. While your current
+% project's directory will do, emo's installation potentially comprises
+% thousands of files. Hence it may be preferrable to adhere to the
+% \href{https://en.wikibooks.org/wiki/LaTeX/Installing_Extra_Packages}{TeX
+% Directory Structure}, with dedicated directories for the following files:
+% \begin{enumerate}
+% \item |emo.sty| with the package implementation;
+% \item |emo.def| with the emoji table;
 % \item |NotoSerifTC-Regular.otf| for |\lingchi|;
 % \item \emph{all} PDF files in the |emo-graphics| directory.
 % \end{enumerate}
+% \end{enumerate}
 %
 % When running on the LuaLaTeX engine, the emo package also uses the Noto color
-% emoji and Linux Libertine fonts, with the latter use to render |\YHWH|.
+% emoji and Linux Libertine fonts, with the latter used to render |\YHWH|.
 % Neither file is included with emo's distribution, since both of them are
-% distributed with major TeX distributions already.
-%
-% If you want to change the inventory of supported emoji, execute:
-% \begingroup\obeylines
-% |    $ python3 scripts/emo.py|
-% \endgroup
+% distributed with major TeX distributions already. If they are not included
+% with your LaTeX distribution, you can find them on CTAN.
 %
 %
-% ^^A ----------------------------------------------------------------------------------
+% ^^A ==================================================================================
 % \section{Usage}
 %
 % As usual, you declare your document's dependency on emo with
@@ -247,35 +241,169 @@ Released under LPPL v1.3c or later
 % \end{description}
 %
 % \DescribeMacro{\emo}
-% |\emo|\marg{emoji-name} expands to the named emoji. For LuaLaTeX, it uses the
-% Noto color emoji font. For all other engines, it uses PDF graphics. That way,
-% |\emo{desert-island}| results in~\emo{desert-island} and |\emo{parrot}|
-% results in~\emo{parrot}.
+% An |\emo|\marg{emoji-name} invocation expands to the named emoji. For
+% LuaLaTeX, it uses the Noto color emoji font. For all other engines, it uses
+% PDF graphics. That way, |\emo{desert-island}| results in~\emo{desert-island}
+% and |\emo{parrot}| results in~\emo{parrot}.
 %
 % Since LaTeX tends to produce a lot of command line noise about underfull boxes
 % and loaded fonts, it's a easy to miss meaningful warnings. For that reason,
 % |\emo| expands to an attention-seeking error message upon undefined emoji
 % names. For example, |\emo{boo}| produces \emo{boo}.
 %
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsection{Emoji Names}
+%
+% With some exceptions, emo's names for emoji are automatically derived from
+% their Unicode names, with letters converted to lowercase, punctuation such as
+% commas, colons, quotes, and parentheses stripped, and interword spaces
+% replaced by dashes. Furthermore, instead of the rather verbose
+% |dark-skin-tone|, |medium-dark-skin-tone|, etc modifiers, emo
+% uses the more succinct |darkest|, |darker|, |medium|, |lighter|, and
+% |lightest|.
+%
+% For some emoji names, emo goes further by hard-coding shorter names. Those
+% names are listed in Table~\ref{tab:special-names}.
+%
+% \begin{table}
+% \caption{Exceptional emoji names}
+% \label{tab:special-names}
+% \small\vspace{1em}
+% \begin{tabular}{ll}
+% \textbf{Transformed Unicode Name} & \textbf{Emo Replacement Name} \\ \hline
+% |a-button-blood-type| & |a-button| \\
+% |ab-button-blood-type| & |ab-button| \\
+% |b-button-blood-type| & |b-button| \\
+% |o-button-blood-type| & |o-button| \\
+% |bust-in-silhouette| & |bust| \\
+% |busts-in-silhouette| & |busts| \\
+% |flag-european-union| & |eu| \\
+% |globe-showing-americas| & |globe-americas| \\
+% |globe-showing-asia-australia| & |globe-asia-australia| \\
+% |globe-showing-europe-africa| & |globe-africa-europe| \\
+% |hear-no-evil-monkey| & |hear-no-evil| \\
+% |index-pointing-at-the-viewer| & |index-pointing-at-viewer| \\
+% |index-pointing-at-the-viewer-darkest| & |index-pointing-at-viewer-darkest| \\
+% |index-pointing-at-the-viewer-darker| & |index-pointing-at-viewer-darker| \\
+% |index-pointing-at-the-viewer-medium| & |index-pointing-at-viewer-medium| \\
+% |index-pointing-at-the-viewer-lighter| & |index-pointing-at-viewer-lighter| \\
+% |index-pointing-at-the-viewer-lightest| & |index-pointing-at-viewer-lightest| \\
+% |keycap-*| & |keycap-star| \\
+% |keycap-#| & |keycap-hash| \\
+% |keycap-0| & |keycap-zero| \\
+% |keycap-1| & |keycap-one| \\
+% |keycap-2| & |keycap-two| \\
+% |keycap-3| & |keycap-three| \\
+% |keycap-4| & |keycap-four| \\
+% |keycap-5| & |keycap-five| \\
+% |keycap-6| & |keycap-six| \\
+% |keycap-7| & |keycap-seven| \\
+% |keycap-8| & |keycap-eight| \\
+% |keycap-9| & |keycap-nine| \\
+% |keycap-10| & |keycap-ten| \\
+% |magnifying-glass-tilted-left| & |loupe-left| \\
+% |magnifying-glass-tilted-right| & |loupe-right| \\
+% |palm-down-hand| & |palm-down| \\
+% |palm-down-hand-darkest| & |palm-down-darkest| \\
+% |palm-down-hand-darker| & |palm-down-darker| \\
+% |palm-down-hand-medium| & |palm-down-medium| \\
+% |palm-down-hand-lighter| & |palm-down-lighter| \\
+% |palm-down-hand-lightest| & |palm-down-lightest| \\
+% |palm-up-hand| & |palm-up| \\
+% |palm-up-hand-darkest| & |palm-up-darkest| \\
+% |palm-up-hand-darker| & |palm-up-darker| \\
+% |palm-up-hand-medium| & |palm-up-medium| \\
+% |palm-up-hand-lighter| & |palm-up-lighter| \\
+% |palm-up-hand-lightest| & |palm-up-lightest| \\
+% |rolling-on-the-floor-laughing| & |rofl| \\
+% |see-no-evil-monkey| & |see-no-evil| \\
+% |speak-no-evil-monkey| & |speak-no-evil| \\
+% \end{tabular}
+% \end{table}
+%
+% Emo's |emo.def| contains the names and codepoints of all currently supported
+% emoji. Its distribution also includes the |emoji-test.txt| file, which is part
+% of \href{https://unicode.org/reports/tr51/}{Unicode TR-51} and contains the
+% names and codepoints of all \emph{potentially} supported emoji, i.e., all
+% emoji. It further organizes emoji into groups and subgroups, with the current
+% (sub)group being the one named on the closest line above the emoji that starts
+% with |# |(|sub|)|group:|.
+%
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsection{Extras}
+%
 % \DescribeMacro{\lingchi}
 % \DescribeMacro{\YHWH}
 % The |\lingchi| and |\YHWH| macros take no arguments and produce \lingchi and
 % \YHWH, respectively. They are only available if emo is used with the
-% \textsf{extra} option. The first command produces is the Chinese term for
-% ``death by a thousand cuts.'' While originally an execution method, the term
-% applies to surprisingly many software systems as well. The second command
-% produces the Tetragrammaton, the Hebrew name for God. Observant Jews do not
-% speak the name, not even in thoughts. In my mind, that nicely mirrors the very
-% incomprehensibility of \YHWH. Both macros preserve a subsequent space as
-% space, no backslash needed.
+% \textsf{extra} option. The former renders the Chinese term for ``death by a
+% thousand cuts.'' While originally an execution method, the term applies to
+% surprisingly many software systems as well. The latter produces the
+% Tetragrammaton, the Hebrew name for God. Observant Jews never utter what's
+% written, not even in their thoughts, substituting Adonai (``My Lord''), Elohim
+% (``God''), or HaShem (``The Name'') instead. In my mind, that nicely mirrors
+% the very incomprehensibility of \YHWH. Both macros preserve a subsequent space
+% as space, no backslash needed.
+%
+%
+% ^^A ==================================================================================
+% \section{Configuration}
+% \label{sec:config}
+%
+% Emo's implementation is split over two files, |emo.sty| and |emo.def|. The
+% former file defines the substance of the package, its options, its helper
+% macros, and the user-visible |\emo|, |\lingchi|, and |\YHWH| macros. The
+% latter file defines the table of supported emoji. For each such emoji, the
+% table contains a command |\emo@emoji@|\meta{emoji-name} with the emoji's
+% codepoints as value. |emo.sty| includes the table during loading and
+% thereafter relies on it for validating emoji names and rendering emoji in
+% LuaLaTeX. It may be possible to combine the two files into one, but that
+% avoids at most a few disc reads and hence doesn't seem worth the trouble.
+%
+%
+% \subsection{Update Configuration}
+%
+% Invoke |config/emo.py| to automatically reconfigures emo's supported emoji:
+% \begin{verbaish}
+% \$ python3 config/emo.py \meta{selector} \meta{selector} $\ldots$
+% \end{verbaish}
+%
+% Each selector may be:
+% \begin{itemize}
+% \item The literal |ALL| (case-sensitive) for \emph{all} emoji.
+% \item Name of a group in |emoji-test.txt| lowercased and with spaces replaced
+%     by dashes and ampersand |&| replaced by an |and|; e.g.,
+%     |travel-and-places|.
+% \item Name of a group, a double colon |::|, and name of a subgroup, again
+%     lowercased and with spaces replaced by dashes and |&| by an |and|; e.g.,
+%     |travel-and-places::place-geographic|.
+% \item The name of an emoji; e.g., |desert-island|.
+% \end{itemize}
+%
+% For data safety, |emo.py| does not overwrite PDF graphics and hence can only
+% add emoji to the configuration. To remove emoji, simply remove their PDF
+% graphics from |emo-graphics| and then run |emo.py|, which updates the emoji
+% table accordingly.
+%
+% |emo.py| effectively treats |emoji-test.txt| as registry of all emoji and the
+% filenames of PDF graphics in |emo-graphics| as emo's current inventory. For
+% all emoji named by selector arguments but not in the inventory, |emo.py|
+% converts the SVG source graphic from the Noto color emoji sources to a PDF
+% file and deletes the |/Page| |/Group| object from the the PDF again, since
+% that object trips up |pdflatex|. And yeah, |emo.py| automatically downloads
+% the Noto color emoji sources if necessary.
+%
 %
 % \StopEventually{\PrintIndex}
 %
 %
-% ^^A ----------------------------------------------------------------------------------
+% ^^A ==================================================================================
 % \section{Implementation}
 %
-% Let's start the package implementation:
+% Now that we understand how to configure emo, we are ready for exploring the
+% implementation in detail. Let's get started:
 %    \begin{macrocode}
 %<*package>
 %    \end{macrocode}
@@ -502,7 +630,7 @@ Released under LPPL v1.3c or later
 %
 % \Finale
 %
-%
+% ^^A ----------------------------------------------------------------------------------
 % \obeyspaces
 % \typeout{}
 % \typeout{╔═════════════════════emo══⊰}
@@ -517,14 +645,11 @@ Released under LPPL v1.3c or later
 % \typeout{║     $ source build.sh}
 % \typeout{║}
 % \typeout{║}
-% \iffalse
-% \typeout{║ To select emoji, download https://github.com/googlefonts/noto-emoji}
-% \typeout{║ into same directory as emo's distribution. Then run:}
+% \typeout{║ To reconfigure supported emoji, run:}
 % \typeout{║}
-% \typeout{║     $ python3 emo.py}
+% \typeout{║     $ python3 config/emo.py -h}
 % \typeout{║}
 % \typeout{║}
-% \fi
 % \typeout{║ To install emo, put these files somewhere LaTeX can find them:}
 % \typeout{║}
 % \typeout{║     emo.def}
@@ -533,4 +658,4 @@ Released under LPPL v1.3c or later
 % \typeout{║     emo-graphics/*.pdf}
 % \typeout{║}
 % \typeout{╚═════════════════════emo══⊰}
-% \typeout{ }
+% \typeout{}
