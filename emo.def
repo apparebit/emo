@@ -12,6 +12,7 @@
 \def\emo@emoji@label{🏷️}
 \def\emo@emoji@eye{👁️}
 \def\emo@emoji@busts{👥}
+\expandafter\def\csname emo@emoji@currency-exchange\endcsname{💱}
 \expandafter\def\csname emo@emoji@floppy-disk\endcsname{💾}
 \expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
 \def\emo@emoji@pager{📟}
