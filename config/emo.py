@@ -633,6 +633,7 @@ def fix_pdf(qpdf: str, path: Path) -> None:
 
     tmp = path.with_suffix('.patched.pdf')
     subprocess.run([qpdf, str(json_path), '--json-input', str(tmp)], check=True)
+    json_path.unlink()
     tmp.replace(path)
 
 def convert_svg_to_pdf(rsvg_convert: str, source: Path, target: Path) -> None:
