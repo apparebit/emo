@@ -2,17 +2,15 @@
 
 # Check Python version.
 import sys
-python_version = (sys.version_info.major, sys.version_info.minor)
-if python_version < (3,7):
-    print('emo.py avoids helpful Python features to maximize compatibility.')
-    print('Still, it does require 3.7 or later. Please upgrade your Python.')
+if sys.version_info < (3,7):
+    print('While emo.py avoids recent Python features to maximize compatibility,')
+    print('it does require 3.7 or later. Please upgrade your Python.')
     sys.exit(1)
 
 # Not quite ready for primetime. But the idea is to generate the emo@emoji@
 # table automatically at scale.
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass, field
 from enum import Enum
 import json
@@ -20,7 +18,10 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
-from typing import Any, Iterable, Optional, TextIO, Union
+from typing import (
+    Any, Dict, Iterable, KeysView, List, Mapping,
+    NoReturn, Optional, TextIO, Tuple, Union
+)
 from urllib.request import urlopen
 
 
@@ -107,7 +108,7 @@ def to_codepoint(cp: Union[int, str]) -> int:
         cp = cp[2:]
     return int(cp, base=16)
 
-def to_codepoints(value: Union[str, Iterable[Union[int,str]]]) -> Sequence[int]:
+def to_codepoints(value: Union[str, Iterable[Union[int,str]]]) -> Tuple[int, ...]:
     if isinstance(value, str):
         return tuple(ord(c) for c in value)
     return tuple(to_codepoint(cp) for cp in value)
@@ -146,15 +147,16 @@ def to_group(group: str) -> str:
     return AMPERSAND.sub('-and-', group)
 
 def to_subgroup(subgroup: str) -> str:
-    return subgroup.lower()
+    subgroup = subgroup.lower()
+    return AMPERSAND.sub('-and-', subgroup)
 
-def to_group_subgroup(group: str, subgroup: str) -> tuple[str, str]:
+def to_group_subgroup(group: str, subgroup: str) -> Tuple[str, str]:
     return to_group(group), to_subgroup(subgroup)
 
 def is_subgroup_selector(identifier: str) -> bool:
     return '::' in identifier
 
-def split_subgroup_selector(identifier: str) -> tuple[str,...]:
+def split_subgroup_selector(identifier: str) -> List[str]:
     return identifier.lower().split('::')
 
 
@@ -175,9 +177,10 @@ class Status(str, Enum):
 class Emoji:
     """Representation of an emoji. The status is optional to allow for quick hacks."""
     name: str = field(compare=False)
-    codepoints: tuple[int,...]
+    codepoints: Tuple[int,...]
     display: str = field(init=False, compare=False)
-    status: Optional[Status] = field(default=None, compare=None)
+    status: Optional[Status] = field(default=None, compare=False)
+    version: Optional[float] = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
         display = ''.join(map(lambda cp: chr(cp), self.codepoints))
@@ -189,10 +192,13 @@ class Emoji:
         name: str,
         value: Union[str, Iterable[Union[int,str]]],
         status: Union[str, Status, None] = None,
+        version: Union[str, float, None] = None,
     ) -> 'Emoji':
         if status is not None and not isinstance(status, Status):
             status = Status(status)
-        return Emoji(to_name(name), to_codepoints(value), status)
+        if isinstance(version, str):
+            version = float(version)
+        return Emoji(to_name(name), to_codepoints(value), status, version)
 
     def __str__(self) -> str:
         return self.display
@@ -262,8 +268,8 @@ class Emoji:
 # Parser for Unicode TR-51's 'emoji-test.txt' File
 
 NameTable = Mapping[str, Emoji]
-CodepointTable = Mapping[Sequence[int], Emoji]
-SubgroupTable = Mapping[str, Sequence[Emoji]]
+CodepointTable = Mapping[Tuple[int, ...], Emoji]
+SubgroupTable = Mapping[str, Tuple[Emoji, ...]]
 GroupTable = Mapping[str, SubgroupTable]
 
 class RegistryParser:
@@ -286,15 +292,15 @@ class RegistryParser:
     def __init__(self, path: Union[str, Path]) -> None:
         self._path: Union[str, Path] = path
         self._lineno = 0
-        self._name_table: dict[str, Emoji] = {}
-        self._codepoint_table: dict[str, Sequence[int]] = {}
-        self._group_table: dict[str, dict[str, Sequence[Emoji]]] = {}
+        self._name_table: Dict[str, Emoji] = {}
+        self._codepoint_table: Dict[Tuple[int, ...], Emoji] = {}
+        self._group_table: Dict[str, Dict[str, Tuple[Emoji, ...]]] = {}
         self._group_name: Optional[str] = None
-        self._group: Optional[dict[str, Sequence[Emoji]]] = None
+        self._group: Optional[Dict[str, Tuple[Emoji, ...]]] = None
         self._subgroup_name: Optional[str] = None
-        self._subgroup: Optional[list[Emoji]] = None
+        self._subgroup: Optional[List[Emoji]] = None
 
-    def error(self, msg: str) -> None:
+    def error(self, msg: str) -> NoReturn:
         raise ValueError(f'{self._path}:{self._lineno}: {msg}')
 
     GROUP_PREFIX = '# group: '
@@ -307,14 +313,15 @@ class RegistryParser:
         [ ]+ [#] [ ]
         (?P<display>[^ ]+)
         [ ]
-        [E][0-9.]+
+        [E](?P<version>[0-9.]+)
         [ ]
         (?P<name>.+)
         $
     """, re.X)
 
-    def parse_line(self, line: str) -> Union[Emoji, tuple[str, str], None]:
+    def parse_line(self, line: str) -> Union[Emoji, Tuple[str, str], None]:
         line = line.strip()
+        # Group and subgroup are specified in comments.
         if line.startswith(self.GROUP_PREFIX):
             return 'group', to_group(line[len(self.GROUP_PREFIX):])
         if line.startswith(self.SUBGROUP_PREFIX):
@@ -329,6 +336,7 @@ class RegistryParser:
             match.group('name'),
             match.group('codepoints').split(),
             match.group('status'),
+            match.group('version')
         )
 
     def enter_group(self, name: str) -> None:
@@ -345,6 +353,8 @@ class RegistryParser:
 
     def maybe_exit_subgroup(self) -> None:
         if self._subgroup_name is not None:
+            assert self._group is not None
+            assert self._subgroup is not None
             self._group[self._subgroup_name] = tuple(self._subgroup)
             self._subgroup_name = None
             self._subgroup = None
@@ -387,9 +397,10 @@ class RegistryParser:
         # Record component and fully qualified emoji also by name and group/subgroup.
         if emoji.is_component or emoji.is_fully_qualified:
             self._name_table[emoji.name] = emoji
+            assert self._subgroup is not None
             self._subgroup.append(emoji)
 
-    def run(self) -> tuple[NameTable, CodepointTable, GroupTable]:
+    def run(self) -> Tuple[NameTable, CodepointTable, GroupTable]:
         assert self._lineno == 0
 
         with open(self._path, mode='r', encoding='utf8') as file:
@@ -439,66 +450,83 @@ class Registry:
         codepoint_table: CodepointTable,
         group_table: GroupTable
     ) -> None:
+        """Create a new emoji registry. Use `from_file()` instead."""
         self._name_table = name_table
         self._codepoint_table = codepoint_table
         self._group_table = group_table
 
     @classmethod
     def from_file(cls, path: Union[str, Path]) -> 'Registry':
+        """Instantiate a new registry instance from the given file."""
         return Registry(*RegistryParser(path).run())
 
-    def names(self) -> list[str]:
-        return list(self._name_table.keys())
+    def emoji_names(self) -> KeysView[str]:
+        """Get the names of all registered emoji."""
+        return self._name_table.keys()
 
-    def lookup(self, identifier: Union[str, Sequence[int]]) -> Optional[Emoji]:
+    def lookup(self, identifier: Union[str, Tuple[int, ...]]) -> Optional[Emoji]:
+        """Look up an emoji by name or codepoints."""
         if isinstance(identifier, str):
             return self._name_table.get(identifier.lower())
         return self._codepoint_table.get(identifier)
 
     def is_group(self, group: str) -> bool:
+        """Determine if the group name is valid."""
         return group in self._group_table
 
     def is_subgroup(self, group: str, subgroup: str) -> bool:
+        """Determine if the subgroup name is valid. The group name must be valid."""
         return subgroup in self._group_table[group]
 
-    def groups(self) -> Set[str]:
+    def group_names(self) -> KeysView[str]:
+        """Get the names of all groups."""
         return self._group_table.keys()
 
-    def subgroups_of(self, group: str) -> Set[str]:
+    def subgroup_names(self, group: str) -> KeysView[str]:
+        """Get the names of all subgroups."""
         return self._group_table[group].keys()
 
-    def subgroup(self, group: str, subgroup: str) -> tuple[Emoji]:
+    def subgroup(self, group: str, subgroup: str) -> Tuple[Emoji, ...]:
+        """Get the subgroup of the group."""
         return self._group_table[group][subgroup]
 
-    def select(self, *selectors: str) -> list[Emoji]:
-        selection: list[Emoji] = list()
+    def subgroup_from_selector(self, selector: str) -> Tuple[Emoji, ...]:
+        """Get the subgroup for the given `group::subgroup` selector."""
+        names = split_subgroup_selector(selector)
+        if len(names) != 2:
+            raise KeyError(f'selector "{selector}" does not combine two names')
+        group, subgroup = to_group_subgroup(*names)
+        if not self.is_group(group):
+            raise KeyError(f'selector "{selector}" names non-existent group')
+        if not self.is_subgroup(group, subgroup):
+            raise KeyError(f'selector "{selector}" names non-existent subgroup')
+        return self.subgroup(group, subgroup)
+
+    def select(self, *selectors: str) -> List[Emoji]:
+        """Get the emoji matching the given selectors."""
+        selection: List[Emoji] = list()
 
         for selector in selectors:
+            # 'ALL' -- all emoji
             if selector == 'ALL':
-                for group in self.groups():
-                    for subgroup in self.subgroups_of(group):
+                for group in self.group_names():
+                    for subgroup in self.subgroup_names(group):
                         selection.extend(self.subgroup(group, subgroup))
                 continue
 
+            # group::subgroup -- all emoji in the subgroup
             if is_subgroup_selector(selector):
-                names = split_subgroup_selector(selector)
-                if len(names) != 2:
-                    raise KeyError(f'selector "{selector}" has more than two names')
-                group, subgroup = to_group_subgroup(*names)
-                if not self.is_group(group):
-                    raise KeyError(f'selector "{selector}" names non-existent group')
-                subgroups = self.subgroups_of(group)
-                if subgroup not in subgroups:
-                    raise KeyError(f'selector "{selector}" names non-existent subgroup')
-                selection.extend(self.subgroup(group, subgroup))
+                selection.extend(self.subgroup_from_selector(selector))
                 continue
 
+            # name -- all emoji in the group, if it exists
             group = to_group(selector)
             if self.is_group(group):
-                for subgroup in self.subgroups_of(group):
+                for subgroup in self.subgroup_names(group):
                     selection.extend(self.subgroup(group, subgroup))
                 continue
 
+            # name -- the named emoji, if it exists
             name = selector.lower()
             if name in self._name_table:
                 selection.append(self._name_table[name])
@@ -509,11 +537,12 @@ class Registry:
         return selection
 
     def dump(self, file: Optional[TextIO] = None) -> None:
+        """Dump the registry contents by groups and subgroups."""
         if file is None:
             file = sys.stdout
 
-        for group in self.groups():
-            for subgroup in self.subgroups_of(group):
+        for group in self.group_names():
+            for subgroup in self.subgroup_names(group):
                 file.write(group)
                 file.write('∷')
                 file.write(subgroup)
@@ -702,19 +731,24 @@ def create_parser() -> ArgumentParser:
         formatter_class=ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        '--show-groups',
+        '--show-group-names',
         action='store_true',
-        help='show supported group, subgroup pairs and exit',
+        help='show supported group, subgroup names and exit',
     )
     parser.add_argument(
-        '--show-names',
+        '--show-emoji-names',
         action='store_true',
         help='show supported emoji names and exit',
     )
     parser.add_argument(
-        '--show-name-map',
+        '--show-special-names',
         action='store_true',
-        help='show map from simplified Unicode names to selector names and exit'
+        help='show map from (simplified) Unicode names to emoji names and exit'
+    )
+    parser.add_argument(
+        '--show-names',
+        action='store_true',
+        help='show group, emoji, as well as special names and exit'
     )
     parser.add_argument(
         '--dry-run',
@@ -761,37 +795,44 @@ def create_parser() -> ArgumentParser:
     )
     return parser
 
-def show_identifiers(registry: Registry, options: Any) -> bool:
+def show_names(registry: Registry, options: Any) -> bool:
     showed_something = False
 
-    if options.show_groups:
+    if options.show_group_names or options.show_names:
         print('Supported groups and subgroups:')
-        for group in registry.groups():
-            for subgroup in registry.subgroups_of(group):
+        for group in registry.group_names():
+            for subgroup in registry.subgroup_names(group):
                 print(f'    {group}::{subgroup}')
         showed_something = True
-    if options.show_names:
+    if options.show_emoji_names or options.show_names:
         print('Supported emoji names:')
-        names = list(registry.names())
+        names = list(registry.emoji_names())
         names.sort()
         for name in names:
             print(f'    {name}')
         showed_something = True
-    if options.show_name_map:
-        print('Map from Unicode to selector names:')
+    if options.show_special_names or options.show_names:
+        print('Map from (simplified) Unicode to (special) emoji names:')
         for unicode, selector in RENAMING.items():
             print(f'    {unicode:40s} ▶ {selector}')
         showed_something = True
     return showed_something
 
 
-def create_inventory(registry: Registry, options: Any) -> list[Emoji]:
-    inventory: list[Emoji] = []
+SPECIAL_FILES = ('lingchi.pdf', 'YHWH.pdf')
+
+def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
+    inventory: List[Emoji] = []
 
     if options.graphics.exists() and options.graphics.is_dir():
         for entry in options.graphics.iterdir():
-            if not entry.is_file() or entry.suffix != '.pdf':
+            if (
+                not entry.is_file() or
+                entry.suffix != '.pdf' or
+                entry.name in SPECIAL_FILES
+            ):
                 continue
+
             emoji = registry.lookup(entry.stem)
             if emoji is not None:
                 inventory.append(emoji)
@@ -802,8 +843,8 @@ def create_inventory(registry: Registry, options: Any) -> list[Emoji]:
 
 
 def write_emoji_table(
-    requested_emoji: list[Emoji], existing_emoji: list[Emoji], options: Any
-) -> list[Emoji]:
+    requested_emoji: List[Emoji], existing_emoji: List[Emoji], options: Any
+) -> List[Emoji]:
     all_emoji = list(set(requested_emoji) | set(existing_emoji))
     all_emoji.sort()
 
@@ -821,7 +862,7 @@ def write_emoji_table(
 def main() -> None:
     options = create_parser().parse_args()
     registry = Registry.from_file(options.registry)
-    if show_identifiers(registry, options):
+    if show_names(registry, options):
         return
 
     try:
@@ -849,7 +890,7 @@ def main() -> None:
         all_emoji = write_emoji_table(requested_emoji, existing_emoji, options)
 
         if options.verbose:
-            print('info:  ' + ' '.join(emoji.display for emoji in all_emoji))
+            print('info: supported emoji: ' + ' '.join(e.display for e in all_emoji))
 
     except Exception as x:
         print(f'error: {x}')
