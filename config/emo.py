@@ -7,8 +7,9 @@ if sys.version_info < (3,7):
     print('it does require 3.7 or later. Please upgrade your Python.')
     sys.exit(1)
 
-# Not quite ready for primetime. But the idea is to generate the emo@emoji@
-# table automatically at scale.
+# -------------------------------------------------------------------------
+# (C) Copyright 2023 by Robert Grimm, released under the Apache 2.0 license
+# -------------------------------------------------------------------------
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from dataclasses import dataclass, field
@@ -24,6 +25,41 @@ from typing import (
 )
 from urllib.request import urlopen
 
+# --------------------------------------------------------------------------------------
+
+class Log:
+    def __init__(self, out: TextIO = sys.stderr) -> None:
+        self._out = out
+        self._first_header = True
+
+    def sgr(self, open: str, text: str, close: str) -> str:
+        if self._out.isatty():
+            return f'\x1b[{open}m{text}\x1b[{close}m'
+        return text
+
+    def pln(self, text: str = '') -> None:
+        print(text, file=self._out)
+
+    def header(self, text: str) -> None:
+        if self._first_header:
+            self._first_header = False
+        else:
+            self.pln()
+        self.pln(self.sgr('1', text, '0'))
+
+    def detail(self, text: str) -> None:
+        self.pln(f'    {text}')
+
+    def error(self, text: str) -> None:
+        self.pln(self.sgr('1;31', f'ERROR: {text}', '0;39'))
+
+    def warning(self, text: str) -> None:
+        self.pln(self.sgr('1;38;5;208', f'WARNING: {text}', '0;39'))
+
+    def info(self, text: str) -> None:
+        self.pln(self.sgr('1;34', f'INFO: {text}', '0;39'))
+
+log = Log()
 
 # --------------------------------------------------------------------------------------
 # Emoji Names
@@ -133,6 +169,7 @@ SHORT_GROUPS = {
     'animals': 'animals-and-nature',
     'body': 'people-and-body',
     'drink': 'food-and-drink',
+    'emotion': 'smileys-and-emotion',
     'food': 'food-and-drink',
     'nature': 'animals-and-nature',
     'people': 'people-and-body',
@@ -583,20 +620,20 @@ def is_valid_noto_emoji(noto_path: Path) -> bool:
 def ensure_local_noto_emoji(noto_path: Path, verbose: bool = False) -> None:
     if is_valid_noto_emoji(noto_path):
         if verbose:
-            print(f'info: seemingly valid Noto emoji sources at "{noto_path}"')
+            log.info(f'Seemingly valid Noto emoji sources at "{noto_path}"')
         return
 
     noto_zip = noto_path.with_name('noto-emoji.zip')
     if not noto_zip.exists():
         if verbose:
-            print(f'info: downloading Noto emoji sources from "{NOTO_REPOSITORY}"')
+            log.info(f'Downloading Noto emoji sources from "{NOTO_REPOSITORY}"')
         with urlopen(NOTO_REPOSITORY) as response, open(noto_zip, mode='wb') as file:
             shutil.copyfileobj(response, file)
 
     # With archive representing main branch, it is unpacked into
     # noto-emoji-main. We fix that after unpacking.
     if verbose:
-        print(f'info: unpacking Noto emoji sources into "{noto_path}"')
+        log.info(f'Unpacking Noto emoji sources into "{noto_path}"')
     shutil.unpack_archive(noto_zip, noto_path.parent, 'zip')
     noto_path.with_name('noto-emoji-main').rename(noto_path)
 
@@ -699,10 +736,10 @@ class Converter:
         target = self.target_dir / f'{emoji.name}.pdf'
         if not target.exists():
             if verbose:
-                print(f'info: converting "{source}" to "{target}"')
+                log.info(f'Converting "{source}" to "{target}"')
             convert_svg_to_pdf(self.rsvg_convert, source, target)
             if verbose:
-                print(f'info: fixing /Page /Group in "{target}"')
+                log.info(f'Fixing /Page /Group in "{target}"')
             fix_pdf(self.qpdf, target)
         return target
 
@@ -799,22 +836,22 @@ def show_names(registry: Registry, options: Any) -> bool:
     showed_something = False
 
     if options.show_group_names or options.show_names:
-        print('Supported groups and subgroups:')
+        log.header('Supported groups and subgroups:')
         for group in registry.group_names():
             for subgroup in registry.subgroup_names(group):
-                print(f'    {group}::{subgroup}')
+                log.detail(f'{group}::{subgroup}')
         showed_something = True
     if options.show_emoji_names or options.show_names:
-        print('Supported emoji names:')
+        log.header('Supported emoji names:')
         names = list(registry.emoji_names())
         names.sort()
         for name in names:
-            print(f'    {name}')
+            log.detail(f'{name}')
         showed_something = True
     if options.show_special_names or options.show_names:
-        print('Map from (simplified) Unicode to (special) emoji names:')
+        log.header('Map from (simplified) Unicode to (special) emoji names:')
         for unicode, selector in RENAMING.items():
-            print(f'    {unicode:40s} ▶ {selector}')
+            log.detail(f'{unicode:40s} ▶ {selector}')
         showed_something = True
     return showed_something
 
@@ -837,7 +874,7 @@ def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
             if emoji is not None:
                 inventory.append(emoji)
             elif options.verbose:
-                print(f'warning: "{entry.name}" is not an emoji')
+                log.warning(f'"{entry.name}" is not an emoji')
 
     return inventory
 
@@ -890,10 +927,10 @@ def main() -> None:
         all_emoji = write_emoji_table(requested_emoji, existing_emoji, options)
 
         if options.verbose:
-            print('info: supported emoji: ' + ' '.join(e.display for e in all_emoji))
+            log.info('Supported emoji: ' + ' '.join(e.display for e in all_emoji))
 
     except Exception as x:
-        print(f'error: {x}')
+        log.error(str(x))
 
 
 if __name__ == '__main__':
