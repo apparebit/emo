@@ -328,7 +328,9 @@ Released under LPPL v1.3c or later
 % names and codepoints of all \emph{potentially} supported emoji, i.e., all
 % emoji. It further organizes emoji into groups and subgroups, with the current
 % (sub)group being the one named on the closest line above the emoji that starts
-% with |# |(|sub|)|group:|.
+% with |# |(|sub|)|group:|. As described in the next section, the group and
+% subgroup names can be used during configuration for concisely naming a large
+% number of emoji.
 %
 %
 % ^^A ----------------------------------------------------------------------------------
@@ -381,6 +383,9 @@ Released under LPPL v1.3c or later
 %     |travel-and-places::place-geographic|.
 % \item The name of an emoji; e.g., |desert-island|.
 % \end{itemize}
+% For conjunctive group names, such as ``Smileys \& Emotion'' (|emoji-test.txt|)
+% or ``smileys-and-emotion'' (|emo.py|), the configuration script also accepts
+% either of the two nouns as a shortcut, e.g., ``smileys'' or ``emotion.''
 %
 % For data safety, |emo.py| does not overwrite PDF graphics and hence can only
 % add emoji to the configuration. To remove emoji, simply remove their PDF
