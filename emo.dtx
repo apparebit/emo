@@ -34,7 +34,7 @@ When emo is used with the `extra` option, this package also defines the
 `\lingchi` and `\YHWH` macros for 凌遲 and יהוה, respectively. Both macros
 preserve a subsequent space as space, no backslash needed. When used with the
 `index` option, this package also emits a raw index entry for each use of an
-emoji into an `.edx` file.
+emoji into an emo index or `.edx` file.
 
 To **extract files** embedded in [emo.dtx](emo.dtx) and also rebuild the
 [documentation](emo.pdf), run `pdflatex emo.dtx`.
@@ -43,10 +43,9 @@ To **configure the emoji**, run `python3 config/emo.py` with appropriate
 arguments. The [package documentation](emo.pdf) explains the configuration tool
 in detail, but you may find the `-h` for help option sufficient to get started.
 
-To **install this package**, place `emo.def`, `emo.sty`,
-`NotoSerifTC-Regular.otf`, and the contents of the `emo-graphics` directory
-somewhere where LaTeX can find them. In a pinch, your project directory will do
-just fine.
+To **install this package**, place `emo.def`, `emo.sty`, `lingchi.otf`, and the
+contents of the `emo-graphics` directory somewhere where LaTeX can find them. In
+a pinch, your project directory will do just fine.
 
 
 ## Supported Emoji
@@ -67,15 +66,29 @@ script takes care of the heavy lifting during reconfiguration, converting SVG
 into PDF files and generating an updated `emo.def` file.
 
 
-## Licensing
+## Copyright and Licensing
 
-This package's LaTeX code is © Copyright 2023 by Robert Grimm and has been
-released under the [LPPL v1.3c](https://www.latex-project.org/lppl/lppl-1-3c/)
-or later. The Noto fonts distributed with the package are subject to the [SIL
-Open Font License v1.1](https://scripts.sil.org/ofl), while the PDF files in the
-`emo-graphics` directory are distributed under the [Apache 2.0
-license](https://www.apache.org/licenses/LICENSE-2.0), just like the [original
-SVG files](https://github.com/googlefonts/noto-emoji).
+This package combines code written in LaTeX and Python with Unicode data about
+emoji as well as graphics and fonts derived from Google's Noto fonts. As a
+result, a number of different licenses apply, all of which are [OSI
+approved](https://opensource.org/licenses/) and non-copyleft:
+
+  * This package's [LaTeX code](emo.dtx) is © Copyright 2023 by Robert Grimm and
+    has been released under the [LPPL
+    v1.3c](https://www.latex-project.org/lppl/lppl-1-3c/) or later.
+  * The [emo.py](config/emo.py) configuration script also is © Copyright 2023 by
+    Robert Grimm but has been released under the [Apache 2.0
+    license](https://www.apache.org/licenses/LICENSE-2.0).
+  * The [emoji-test.txt](config/emoji-test.txt) configuration file is a data
+    file from [Unicode TR-51](https://unicode.org/reports/tr51/) and hence
+    subject to the [Unicode License](https://www.unicode.org/license.txt).
+  * The `lingchi.otf` font is a two-glyph subset of the serif traditional
+    Chinese version of Google's [Noto
+    fonts](https://github.com/notofonts/noto-cjk) and hence subject to the [SIL
+    Open Font License v1.1](https://scripts.sil.org/ofl).
+  * The PDF graphics in the `emo-graphics` directory are derived from the
+    sources for [Noto's color emoji](https://github.com/googlefonts/noto-emoji)
+    and hence subject to the Apache 2.0 license.
 
 %</readme>
 % --------------------------------------------------------------------------------------
@@ -213,16 +226,19 @@ Released under LPPL v1.3c or later
 % \begin{enumerate}
 % \item |emo.sty| with the package implementation;
 % \item |emo.def| with the emoji table;
-% \item |NotoSerifTC-Regular.otf| for |\lingchi|;
+% \item |lingchi.otf| for |\lingchi|;
 % \item \emph{all} PDF files in the |emo-graphics| directory.
 % \end{enumerate}
 % \end{enumerate}
 %
 % When running on the LuaLaTeX engine, the emo package also uses the Noto color
-% emoji and Linux Libertine fonts, with the latter used to render |\YHWH|.
-% Neither file is included with emo's distribution, since both of them are
-% distributed with major TeX distributions already. If they are not included
-% with your LaTeX distribution, you can find them on CTAN.
+% emoji (|NotoColorEmoji.ttf|) and Linux Libertine (|LinLibertine_R.otf|) fonts,
+% with the latter used for rendering |\YHWH| only. Neither file is included with
+% emo's distribution, since both of them are distributed with major TeX
+% distributions already. If they are not included with your LaTeX distribution,
+% you can find them on CTAN. The |lingchi.otf| font distributed with emo is a
+% two glyph subset of |NotoSerifTC-Regular.otf|, i.e., the serif traditional
+% Chinese version of Noto.
 %
 %
 % ^^A ==================================================================================
@@ -399,6 +415,33 @@ Released under LPPL v1.3c or later
 % file and deletes the |/Page| |/Group| object from the the PDF again, since
 % that object trips up |pdflatex|. And yeah, |emo.py| automatically downloads
 % the Noto color emoji sources if necessary.
+%
+%
+% ^^A ==================================================================================
+% \section{Copyright and Licensing}
+%
+% Since emo's distribution includes not only LaTeX code but also a substantial
+% Python script, Unicode data about emoji, as well as graphics and fonts derived
+% from Google's Noto project, a number of different licenses apply. All of them
+% are \href{https://opensource.org/licenses/}{OSI approved} and non-copyleft:
+% \begin{itemize}
+% \item This package's LaTeX code is © Copyright 2023 by Robert Grimm and has
+%     been released under the
+%     \href{https://www.latex-project.org/lppl/lppl-1-3c/}{LPPL v1.3c} or later.
+% \item The |config/emo.py| script also is © Copyright 2023 by Robert Grimm but
+%     has been released under the
+%     \href{https://www.apache.org/licenses/LICENSE-2.0}{Apache 2.0 license}.
+% \item The [config/emoji-test.txt] configuration file is a data file from
+%     \href{https://unicode.org/reports/tr51/}{Unicode TR-51} and hence subject
+%     to the \href{https://www.unicode.org/license.txt}{Unicode License}.
+% \item The |lingchi.otf| font is a two-glyph subset of the serif traditional
+%     Chinese version of Google's
+%     \href{https://github.com/notofonts/noto-cjk}{Noto fonts} and hence subject
+%     to the \href{https://scripts.sil.org/ofl}{SIL Open Font License v1.1}.
+% \item The PDF graphics in the |emo-graphics| directory are derived from the
+%     sources for \href{https://github.com/googlefonts/noto-emoji}{Noto's color
+%     emoji} and hence subject to the Apache 2.0 license.
+% \end{itemize}
 %
 %
 % \StopEventually{\PrintIndex}
@@ -602,7 +645,7 @@ Released under LPPL v1.3c or later
 %    \begin{macrocode}
 \ifemo@extra
 \ifluatex
-\newfontface\emo@chinese{NotoSerifTC-Regular.otf}
+\newfontface\emo@chinese{lingchi.otf}
 \newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
