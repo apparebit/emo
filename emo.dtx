@@ -157,6 +157,7 @@ Released under LPPL v1.3c or later
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
+\SetupDoc{reportchangedates}
 \begin{document}
     \DocInput{\jobname.dtx}
 \end{document}
@@ -204,6 +205,9 @@ Released under LPPL v1.3c or later
 % \end{abstract}
 %
 % \tableofcontents
+%
+% \changes{0.2}{2023-03-21}{Add exploding-head to core set of emoji}
+% \changes{0.2}{2023-03-21}{Improve tracking of file names and versions}
 %
 %
 % ^^A ==================================================================================
@@ -452,7 +456,7 @@ Released under LPPL v1.3c or later
 % \end{itemize}
 %
 %
-% \StopEventually{\PrintIndex}
+% \StopEventually{\PrintChanges\PrintIndex}
 %
 %
 % ^^A ==================================================================================
