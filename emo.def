@@ -1,3 +1,4 @@
+\ProvidesFile{emo.def}[2023-03-21]
 \expandafter\def\csname emo@emoji@keycap-one\endcsname{1️⃣}
 \def\emo@emoji@biohazard{☣️}
 \expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}

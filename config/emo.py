@@ -13,6 +13,7 @@ if sys.version_info < (3,7):
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 import json
 from pathlib import Path
@@ -888,6 +889,8 @@ def write_emoji_table(
     tmp_table = options.latex_table.with_suffix('.latest.def')
     if not options.dry_run:
         with open(tmp_table, mode='w', encoding='utf8') as file:
+            today = datetime.today().strftime('%Y-%m-%d')
+            file.write(f'\\ProvidesFile{{emo.def}}[{today}]\n')
             for emoji in all_emoji:
                 file.write(emoji.latex_table_entry)
                 file.write('\n')
