@@ -24,6 +24,7 @@
 \expandafter\def\csname emo@emoji@stop-sign\endcsname{🛑}
 \def\emo@emoji@robot{🤖}
 \def\emo@emoji@handshake{🤝}
+\expandafter\def\csname emo@emoji@exploding-head\endcsname{🤯}
 \def\emo@emoji@parrot{🦜}
 \def\emo@emoji@judge{🧑‍⚖️}
 \expandafter\def\csname emo@emoji@roll-of-paper\endcsname{🧻}
