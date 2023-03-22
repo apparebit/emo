@@ -1,4 +1,4 @@
-# Emo: emoji for all (LaTeX engines)
+# emo: emoji for all (LaTeX engines)
 
 This package defines the `\emo{<emoji-name>}` macro for including color emoji in
 a document no matter the input encoding or LaTeX engine. It uses the Noto color
