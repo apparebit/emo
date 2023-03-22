@@ -99,7 +99,7 @@ approved](https://opensource.org/licenses/) and non-copyleft:
 %<*buildscript>
 pdflatex emo.dtx
 makeindex -s gind.ist -o emo.ind emo.idx
-# makeindex -s gglo.ist -o emo.gls emo.glo  # For tracking changes
+makeindex -s gglo.ist -o emo.gls emo.glo
 pdflatex emo.dtx
 %</buildscript>
 %<*scaffold>
@@ -222,7 +222,7 @@ Released under LPPL v1.3c or later
 % \$ pdflatex emo.dtx
 % \end{verbaish}
 %
-% \item Build the package documentation with indices by running:
+% \item Build the package documentation with changes and index by running:
 % \begin{verbaish}
 % \$ source build.sh
 % \end{verbaish}
@@ -700,7 +700,7 @@ Released under LPPL v1.3c or later
 % \typeout{║     $ pdflatex emo.dtx}
 % \typeout{║}
 % \typeout{║}
-% \typeout{║ To build emo's documentation with indices, run:}
+% \typeout{║ To build emo's documentation with changes and index, run:}
 % \typeout{║}
 % \typeout{║     $ source build.sh}
 % \typeout{║}
