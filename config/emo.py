@@ -293,6 +293,10 @@ class Emoji:
         return f'svg/{self.svg_file}'
 
     @property
+    def pdf_file(self) -> str:
+        return f'emo-{self.name}.pdf'
+
+    @property
     def latex_table_entry(self) -> str:
         if self.has_compound_name:
             prefix = f'\expandafter\def\csname emo@emoji@{self.name}\endcsname'
@@ -734,7 +738,7 @@ class Converter:
 
     def __call__(self, emoji: 'Emoji', verbose: bool = False) -> Path:
         source = self.source_dir / emoji.svg_path
-        target = self.target_dir / f'{emoji.name}.pdf'
+        target = self.target_dir / emoji.pdf_file
         if not target.exists():
             if verbose:
                 log.info(f'Converting "{source}" to "{target}"')
@@ -857,7 +861,7 @@ def show_names(registry: Registry, options: Any) -> bool:
     return showed_something
 
 
-SPECIAL_FILES = ('lingchi.pdf', 'YHWH.pdf')
+SPECIAL_FILES = ('emo-lingchi.pdf', 'emo-YHWH.pdf')
 
 def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
     inventory: List[Emoji] = []
@@ -865,17 +869,17 @@ def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
     if options.graphics.exists() and options.graphics.is_dir():
         for entry in options.graphics.iterdir():
             if (
-                not entry.is_file() or
-                entry.suffix != '.pdf' or
-                entry.name in SPECIAL_FILES
+                not entry.is_file()
+                or not entry.match('emo-*.pdf')
+                or entry.name in SPECIAL_FILES
             ):
                 continue
 
-            emoji = registry.lookup(entry.stem)
+            emoji = registry.lookup(entry.stem[4:])
             if emoji is not None:
                 inventory.append(emoji)
             elif options.verbose:
-                log.warning(f'"{entry.name}" is not an emoji')
+                log.warning(f'"{entry.name}" does not depict an emoji')
 
     return inventory
 
