@@ -6,14 +6,14 @@
 %%
 %% emo.dtx  (with options: `package')
 %% 
-%% emo: emoji for all (LaTeX engines)
+%% emo•ji for all (LaTeX engines)
 %% (C) Copyright 2023 by Robert Grimm
 %% Released under LPPL v1.3c or later
 %% <https://github.com/apparebit/emo>
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo}
-    [2023/03/21 v0.2a1 emo: emoji for all (LaTeX engines)]
+    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
@@ -67,13 +67,13 @@
 \newcommand\emo[1]{%
     \emo@ifdef{#1}{%
         \emo@index{#1}%
-        \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/#1}}%
+        \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-#1}}%
     }%
 }
 \fi
 \ifemo@extra
 \ifluatex
-\newfontface\emo@chinese{lingchi.otf}
+\newfontface\emo@chinese{emo-lingchi.otf}
 \newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
@@ -86,11 +86,11 @@
 \else
 \newcommand\lingchi{%
     \emo@index{lingchi}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/lingchi}}%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-lingchi}}%
     \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/YHWH}}%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-YHWH}}%
     \xspace}
 \fi
 \fi

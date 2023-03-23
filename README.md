@@ -1,30 +1,39 @@
-# emo: emoji for all (LaTeX engines)
+# emo•ji for all (LaTeX engines)
 
 This package defines the `\emo{<emoji-name>}` macro for including color emoji in
-a document no matter the input encoding or LaTeX engine. It uses the Noto color
-emoji font if the engine supports doing so and falls back onto PDF graphics
-otherwise. I wrote this package to use emoji in an academic paper subject to
-[The ACM Publishing
-System](https://authors.acm.org/proceedings/production-information/accepted-latex-packages),
-which prohibits the use of most LaTeX packages but has only minimal support for
-non-Latin scripts. 🎉
+a document no matter the LaTeX engine. It uses the Noto color emoji font if the
+engine supports doing so and falls back onto PDF graphics otherwise. In either
+case, `\emo{desert-island}` results in 🏝 and `\emo{parrot}` results in 🦜. emo
+may come in particularly handy when dealing with academic publishers that
+provide only minimal support for non-Latin scripts (cough,
+[ACM](https://www.acm.org), cough).
+
+## Package Options
 
 When emo is used with the `extra` option, this package also defines the
 `\lingchi` and `\YHWH` macros for 凌遲 and יהוה, respectively. Both macros
-preserve a subsequent space as space, no backslash needed. When used with the
-`index` option, this package also emits a raw index entry for each use of an
-emoji into an emo index or `.edx` file.
+preserve a subsequent space as space, no backslash needed.
 
-To **extract files** embedded in [emo.dtx](emo.dtx) and also rebuild the
-[documentation](emo.pdf), run `pdflatex emo.dtx`.
+When used with the `index` option, this package also emits a raw index entry for
+each use of an emoji into an emo index or `.edx` file.
+
+## Installation
+
+To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
+that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
+but also generates the package documentation.
+
+To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
+shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
+change and the symbol indices, resulting in [emo.pdf](emo.pdf).
 
 To **configure the emoji**, run `python3 config/emo.py` with appropriate
 arguments. The [package documentation](emo.pdf) explains the configuration tool
 in detail, but you may find the `-h` for help option sufficient to get started.
 
-To **install this package**, place `emo.def`, `emo.sty`, `lingchi.otf`, and the
-contents of the `emo-graphics` directory somewhere where LaTeX can find them. In
-a pinch, your project directory will do just fine.
+To **install this package**, place `emo.def`, `emo.sty`, `emo-lingchi.otf`, and
+the graphic files matching `emo-graphics/emo-*.pdf` somewhere where LaTeX can
+find them. In a pinch, your project directory will do.
 
 ## Supported Emoji
 
@@ -59,7 +68,7 @@ approved](https://opensource.org/licenses/) and non-copyleft:
   * The [emoji-test.txt](config/emoji-test.txt) configuration file is a data
     file from [Unicode TR-51](https://unicode.org/reports/tr51/) and hence
     subject to the [Unicode License](https://www.unicode.org/license.txt).
-  * The `lingchi.otf` font is a two-glyph subset of the serif traditional
+  * The `emo-lingchi.otf` font is a two-glyph subset of the serif traditional
     Chinese version of Google's [Noto
     fonts](https://github.com/notofonts/noto-cjk) and hence subject to the [SIL
     Open Font License v1.1](https://scripts.sil.org/ofl).

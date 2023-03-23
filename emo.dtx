@@ -1,6 +1,6 @@
 % \iffalse meta-comment
 %
-% emo: emoji for all (LaTeX engines)
+% emo•ji for all (LaTeX engines)
 % (C) Copyright 2023 by Robert Grimm
 % Released under LPPL v1.3c or later
 % <https://github.com/apparebit/emo>
@@ -8,48 +8,49 @@
 % \fi
 % ^^A ----------------------------------------------------------------------------------
 % \iffalse
-% The option with date and version below applies to both \Provides<Something>
-% declarations; see https://tug.org/TUGboat/tb29-2/tb92pakin.pdf.
-%<*scaffold>
-\ProvidesFile{emo.dtx}
-%</scaffold>
-%<package>\NeedsTeXFormat{LaTeX2e}
-%<package>\ProvidesPackage{emo}
-%<*scaffold,package>
-    [2023/03/21 v0.2a1 emo: emoji for all (LaTeX engines)]
-%</scaffold,package>
-% ======================================================================================
 %<*scaffold>
 \iffalse
 %</scaffold>
+% ======================================================================================
 %<*readme>
-# emo: emoji for all (LaTeX engines)
+# emo•ji for all (LaTeX engines)
 
 This package defines the `\emo{<emoji-name>}` macro for including color emoji in
-a document no matter the input encoding or LaTeX engine. It uses the Noto color
-emoji font if the engine supports doing so and falls back onto PDF graphics
-otherwise. I wrote this package to use emoji in an academic paper subject to
-[The ACM Publishing
-System](https://authors.acm.org/proceedings/production-information/accepted-latex-packages),
-which prohibits the use of most LaTeX packages but has only minimal support for
-non-Latin scripts. 🎉
+a document no matter the LaTeX engine. It uses the Noto color emoji font if the
+engine supports doing so and falls back onto PDF graphics otherwise. In either
+case, `\emo{desert-island}` results in 🏝 and `\emo{parrot}` results in 🦜. emo
+may come in particularly handy when dealing with academic publishers that
+provide only minimal support for non-Latin scripts (cough,
+[ACM](https://www.acm.org), cough).
+
+
+## Package Options
 
 When emo is used with the `extra` option, this package also defines the
 `\lingchi` and `\YHWH` macros for 凌遲 and יהוה, respectively. Both macros
-preserve a subsequent space as space, no backslash needed. When used with the
-`index` option, this package also emits a raw index entry for each use of an
-emoji into an emo index or `.edx` file.
+preserve a subsequent space as space, no backslash needed.
 
-To **extract files** embedded in [emo.dtx](emo.dtx) and also rebuild the
-[documentation](emo.pdf), run `pdflatex emo.dtx`.
+When used with the `index` option, this package also emits a raw index entry for
+each use of an emoji into an emo index or `.edx` file.
+
+
+## Installation
+
+To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
+that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
+but also generates the package documentation.
+
+To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
+shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
+change and the symbol indices, resulting in [emo.pdf](emo.pdf).
 
 To **configure the emoji**, run `python3 config/emo.py` with appropriate
 arguments. The [package documentation](emo.pdf) explains the configuration tool
 in detail, but you may find the `-h` for help option sufficient to get started.
 
-To **install this package**, place `emo.def`, `emo.sty`, `lingchi.otf`, and the
-contents of the `emo-graphics` directory somewhere where LaTeX can find them. In
-a pinch, your project directory will do just fine.
+To **install this package**, place `emo.def`, `emo.sty`, `emo-lingchi.otf`, and
+the graphic files matching `emo-graphics/emo-*.pdf` somewhere where LaTeX can
+find them. In a pinch, your project directory will do.
 
 
 ## Supported Emoji
@@ -86,7 +87,7 @@ approved](https://opensource.org/licenses/) and non-copyleft:
   * The [emoji-test.txt](config/emoji-test.txt) configuration file is a data
     file from [Unicode TR-51](https://unicode.org/reports/tr51/) and hence
     subject to the [Unicode License](https://www.unicode.org/license.txt).
-  * The `lingchi.otf` font is a two-glyph subset of the serif traditional
+  * The `emo-lingchi.otf` font is a two-glyph subset of the serif traditional
     Chinese version of Google's [Noto
     fonts](https://github.com/notofonts/noto-cjk) and hence subject to the [SIL
     Open Font License v1.1](https://scripts.sil.org/ofl).
@@ -101,19 +102,24 @@ pdflatex emo.dtx
 makeindex -s gind.ist -o emo.ind emo.idx
 makeindex -s gglo.ist -o emo.gls emo.glo
 pdflatex emo.dtx
+pdflatex emo.dtx
 %</buildscript>
+% ======================================================================================
 %<*scaffold>
 \fi
-% ======================================================================================
-\begingroup
+\def\nameofplainTeX{plain}
+\ifx\fmtname\nameofplainTeX\else
+    \expandafter\begingroup
+\fi
 %</scaffold>
+% --------------------------------------------------------------------------------------
 %<*install>
 \input docstrip.tex
 \keepsilent
 \askforoverwritefalse
 \preamble
 
-emo: emoji for all (LaTeX engines)
+emo•ji for all (LaTeX engines)
 (C) Copyright 2023 by Robert Grimm
 Released under LPPL v1.3c or later
 <https://github.com/apparebit/emo>
@@ -122,7 +128,6 @@ Released under LPPL v1.3c or later
 \usedir{tex/latex/emo}
 \generate{\file{\jobname.sty}{\from{\jobname.dtx}{package}}}
 %</install>
-% Don't stop processing the .dtx file; only stop processing the install file.
 %<install>\endbatchfile
 % --------------------------------------------------------------------------------------
 %<*scaffold>
@@ -133,8 +138,22 @@ Released under LPPL v1.3c or later
 \generate{\file{build.sh}{\from{\jobname.dtx}{buildscript}}}
 \usedir{doc/latex/emo}
 \generate{\file{README.md}{\from{\jobname.dtx}{readme}}}
-\endgroup
+\ifx\fmtname\nameofplainTeX
+    \expandafter\endbatchfile
+\else
+    \expandafter\endgroup
+\fi
 %</scaffold>
+% ======================================================================================
+% See https://tug.org/TUGboat/tb29-2/tb92pakin.pdf.
+%<*scaffold>
+\ProvidesFile{emo.dtx}
+%</scaffold>
+%<package>\NeedsTeXFormat{LaTeX2e}
+%<package>\ProvidesPackage{emo}
+%<*scaffold,package>
+    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
+%</scaffold,package>
 % ======================================================================================
 %<*driver>
 \PassOptionsToPackage{utf8}{inputenc}
@@ -142,6 +161,7 @@ Released under LPPL v1.3c or later
 % Override the default \small, which looks odd with Inconsolata.
 \renewcommand{\MacroFont}{\normalsize\ttfamily}
 \usepackage[extra]{\jobname}
+\graphicspath{{emo-graphics/}}
 \usepackage{enumitem}
 \usepackage{parskip}
 \usepackage{inconsolata}
@@ -162,18 +182,12 @@ Released under LPPL v1.3c or later
     \DocInput{\jobname.dtx}
 \end{document}
 %</driver>
+% ======================================================================================
 % \fi
 %
-% \newlist{inlinenum}{enumerate*}{1}
-% \setlist[inlinenum]{label=(\alph{inlinenumi})}
-% \newenvironment{verbaish}{%
-%     \ttfamily%
-%     \obeylines%
-%     \obeyspaces%
-%     \vspace{\the\parskip}%
-%     \setlength{\parskip}{0pt}%
-%     \setlength{\parindent}{2em}%
-% }{}
+% \changes{0.2}{2023-03-23}{Prefix file names with |emo-| for uniqueness}
+% \changes{0.2}{2023-03-23}{Extract with pdftex, document with pdflatex}
+% \changes{0.2}{2023-03-23}{Include PDF graphics directly, without directory}
 %
 % \GetFileInfo{\jobname.dtx}
 %
@@ -184,30 +198,38 @@ Released under LPPL v1.3c or later
 % \DoNotIndex{\newcommand,\newif,\newindex}
 % \DoNotIndex{\relax,\string,\textbackslash,\textsf,\texttt}
 %
-% \title{emo: emoji for all\\(LaTeX engines)}
+% \newlist{inlinenum}{enumerate*}{1}
+% \setlist[inlinenum]{label=(\alph{inlinenumi})}
+% \newenvironment{verbatimish}{%
+%     \ttfamily%
+%     \obeylines%
+%     \obeyspaces%
+%     \vspace{\the\parskip}%
+%     \setlength{\parskip}{0pt}%
+%     \setlength{\parindent}{1em}%
+% }{}
+%
+% \title{emo•ji for all\\(LaTeX engines)}
 % \author{\href{https://apparebit.com}{Robert Grimm}}
 % \date{Version \fileversion\ (\filedate)}
 %
 % \maketitle
 %
 % \begin{abstract}
-% \noindent{}Emo implements the |\emo|\marg{emoji-name} command for including
-% color emoji such as \emo{desert-island} or \emo{parrot} in your documents
-% independent of input encoding or LaTeX engine. The implementation uses the
-% Noto color emoji font if the engine supports it and includes PDF graphics
-% otherwise. The latter are automatically derived from Noto's SVG sources, so
-% the visual appearance is very similar. The source repository is at
-% \url{https://github.com/apparebit/emo}. Emo may come in particularly handy
-% when dealing with academic publishers that provide only minimal support for
-% non-Latin scripts (cough,
+% \noindent{}emo implements the |\emo|\marg{emoji-name} command for including
+% color emoji such as |\emo{desert-island}| for \emo{desert-island} or
+% |\emo{parrot}| for \emo{parrot} in your documents independent of LaTeX engine.
+% The implementation uses the Noto color emoji font if the engine supports it
+% and includes PDF graphics otherwise. The latter are automatically derived from
+% Noto's SVG sources, so the visual appearance is very similar. The source
+% repository is at \url{https://github.com/apparebit/emo}. Emo may come in
+% particularly handy when dealing with academic publishers that provide only
+% minimal support for non-Latin scripts (cough,
 % \href{https://authors.acm.org/proceedings/production-information/accepted-latex-packages}{ACM},
 % cough).
 % \end{abstract}
 %
 % \tableofcontents
-%
-% \changes{0.2}{2023-03-21}{Add exploding-head to core set of emoji}
-% \changes{0.2}{2023-03-21}{Improve tracking of file names and versions}
 %
 %
 % ^^A ==================================================================================
@@ -218,29 +240,41 @@ Released under LPPL v1.3c or later
 %
 % \begin{enumerate}
 % \item Start by extracting this package's files from |emo.dtx| by running:
-% \begin{verbaish}
-% \$ pdflatex emo.dtx
-% \end{verbaish}
+% \begin{verbatimish}
+%     \$ pdftex emo.dtx
+% \end{verbatimish}
+% Do \emph{not} use |tex|; it mangles the embedded |README.md|. |pdflatex| also
+% extracts the files and then builds the documentation.
 %
-% \item Build the package documentation with changes and index by running:
-% \begin{verbaish}
-% \$ source build.sh
-% \end{verbaish}
+% \item Build the package documentation with change and symbol indices by
+% running:
+% \begin{verbatimish}
+%      \$ source build.sh
+% \end{verbatimish}
+% The shell script invokes |pdflatex emo.dtx| thrice and |makeindex| once each
+% for the change and symbol indices to produce |emo.pdf|.
 %
-% \item If you want to reconfigure the supported emoji, see \S\ref{sec:config}
-% below.
+% \item Get started reconfiguring supported emoji by running:
+% \begin{verbatimish}
+% \$ python config/emo.py -h
+%     \end{verbatimish}
+% For more detailed instructions, see \S\ref{sec:config} below.
 %
-% \item Put the following files somewhere LaTeX can find them. While your current
-% project's directory will do, emo's installation potentially comprises
-% thousands of files. Hence it may be preferrable to adhere to the
-% \href{https://en.wikibooks.org/wiki/LaTeX/Installing_Extra_Packages}{TeX
-% Directory Structure}, with dedicated directories for the following files:
+% \item Put the following files somewhere LaTeX can find them. In a pinch, your
+% current project's directory will do. However, emo's installation potentially
+% comprises thousands of files. So, you probably want to use a dedicated
+% directory and add that to the search path for LaTeX, e.g., by setting the
+% |TEXINPUTS| environment variable.
 % \begin{enumerate}
 % \item |emo.sty| with the package implementation;
 % \item |emo.def| with the emoji table;
-% \item |lingchi.otf| for |\lingchi|;
+% \item |emo-lingchi.otf| with the glyphs for |\lingchi|;
 % \item \emph{all} PDF files in the |emo-graphics| directory.
 % \end{enumerate}
+% TeX Live requires that each package's files have unique names. For that
+% reason, the PDF graphics in the |emo-graphics| directory start with the |emo-|
+% prefix as well.
+%
 % \end{enumerate}
 %
 % When running on the LuaLaTeX engine, the emo package also uses the Noto color
@@ -248,9 +282,9 @@ Released under LPPL v1.3c or later
 % with the latter used for rendering |\YHWH| only. Neither file is included with
 % emo's distribution, since both of them are distributed with major TeX
 % distributions already. If they are not included with your LaTeX distribution,
-% you can find them on CTAN. The |lingchi.otf| font distributed with emo is a
-% two glyph subset of |NotoSerifTC-Regular.otf|, i.e., the serif traditional
-% Chinese version of Noto.
+% you can find them on CTAN. The |emo-lingchi.otf| font distributed with emo is
+% a two glyph subset of |NotoSerifTC-Regular.otf|, i.e., the traditional Chinese
+% version of Noto serif.
 %
 %
 % ^^A ==================================================================================
@@ -396,9 +430,9 @@ Released under LPPL v1.3c or later
 % \subsection{Update Configuration}
 %
 % Invoke |config/emo.py| to automatically reconfigure emo's supported emoji:
-% \begin{verbaish}
-% \$ python3 config/emo.py \meta{selector} \meta{selector} $\ldots$
-% \end{verbaish}
+% \begin{verbatimish}
+%     \$ python3 config/emo.py \meta{selector} \meta{selector} $\ldots$
+% \end{verbatimish}
 %
 % Each selector may be:
 % \begin{itemize}
@@ -446,9 +480,9 @@ Released under LPPL v1.3c or later
 % \item The [config/emoji-test.txt] configuration file is a data file from
 %     \href{https://unicode.org/reports/tr51/}{Unicode TR-51} and hence subject
 %     to the \href{https://www.unicode.org/license.txt}{Unicode License}.
-% \item The |lingchi.otf| font is a two-glyph subset of the serif traditional
+% \item The |emo-lingchi.otf| font is a two-glyph subset of the traditional
 %     Chinese version of Google's
-%     \href{https://github.com/notofonts/noto-cjk}{Noto fonts} and hence subject
+%     \href{https://github.com/notofonts/noto-cjk}{Noto serif} and hence subject
 %     to the \href{https://scripts.sil.org/ofl}{SIL Open Font License v1.1}.
 % \item The PDF graphics in the |emo-graphics| directory are derived from the
 %     sources for \href{https://github.com/googlefonts/noto-emoji}{Noto's color
@@ -474,12 +508,14 @@ Released under LPPL v1.3c or later
 % included in the annotated implementation. Nonetheless, we can simulate the
 % lines:
 %
-% \begingroup\obeylines
-% |\NeedsTeXFormat{LaTeX2e}|\setlength{\parskip}{0pt}
-% |\ProvidesPackage{emo}[|\texttt{\filedate}| |\texttt{\fileversion}| emo for all]|
-% \endgroup
+% \begin{verbatimish}
+% |\NeedsTeXFormat{LaTeX2e}|
+% |\ProvidesPackage{emo}|
+% |    |[\filedate\space\fileversion\space\fileinfo]
+% \end{verbatimish}
 %
-% And no, I didn't repeat the version number and date. Check |emo.dtx|.
+% And no, I didn't repeat the version number, date, or package information.
+% Check |emo.dtx|.
 %
 %
 % ^^A ----------------------------------------------------------------------------------
@@ -633,7 +669,7 @@ Released under LPPL v1.3c or later
 \newcommand\emo[1]{%
     \emo@ifdef{#1}{%
         \emo@index{#1}%
-        \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/#1}}%
+        \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-#1}}%
     }%
 }
 \fi
@@ -657,7 +693,7 @@ Released under LPPL v1.3c or later
 %    \begin{macrocode}
 \ifemo@extra
 \ifluatex
-\newfontface\emo@chinese{lingchi.otf}
+\newfontface\emo@chinese{emo-lingchi.otf}
 \newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
@@ -670,11 +706,11 @@ Released under LPPL v1.3c or later
 \else
 \newcommand\lingchi{%
     \emo@index{lingchi}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/lingchi}}%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-lingchi}}%
     \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{./emo-graphics/YHWH}}%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-YHWH}}%
     \xspace}
 \fi
 \fi
@@ -689,33 +725,3 @@ Released under LPPL v1.3c or later
 %    \end{macrocode}
 %
 % \Finale
-%
-% ^^A ----------------------------------------------------------------------------------
-% \obeyspaces
-% \typeout{}
-% \typeout{╔═════════════════════emo══⊰}
-% \typeout{║}
-% \typeout{║ To extract build.sh, emo.ins, emo.sty, and README.md, run:}
-% \typeout{║}
-% \typeout{║     $ pdflatex emo.dtx}
-% \typeout{║}
-% \typeout{║}
-% \typeout{║ To build emo's documentation with changes and index, run:}
-% \typeout{║}
-% \typeout{║     $ source build.sh}
-% \typeout{║}
-% \typeout{║}
-% \typeout{║ To reconfigure supported emoji, run:}
-% \typeout{║}
-% \typeout{║     $ python3 config/emo.py -h}
-% \typeout{║}
-% \typeout{║}
-% \typeout{║ To install emo, put these files somewhere LaTeX can find them:}
-% \typeout{║}
-% \typeout{║     emo.def}
-% \typeout{║     emo.sty}
-% \typeout{║     NotoSerifTC-Regular.otf}
-% \typeout{║     emo-graphics/*.pdf}
-% \typeout{║}
-% \typeout{╚═════════════════════emo══⊰}
-% \typeout{}
