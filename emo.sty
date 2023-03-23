@@ -20,8 +20,10 @@
 \DeclareOption{index}{\emo@indexingtrue}
 \ProcessOptions\relax
 \RequirePackage[utf8]{inputenc}
+\newif\ifemo@usefont\emo@usefontfalse
 \RequirePackage{iftex}
-\ifluatex
+\ifluatex\emo@usefonttrue\fi
+\ifemo@usefont
 \RequirePackage{fontspec}
 \else
 \RequirePackage{graphicx}
@@ -55,7 +57,7 @@
 \else
 \def\emo@index#1{}
 \fi
-\ifluatex
+\ifemo@usefont
 \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
 \newcommand\emo[1]{%
     \emo@ifdef{#1}{%
@@ -72,7 +74,7 @@
 }
 \fi
 \ifemo@extra
-\ifluatex
+\ifemo@usefont
 \newfontface\emo@chinese{emo-lingchi.otf}
 \newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%

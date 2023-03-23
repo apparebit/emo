@@ -161,7 +161,9 @@ Released under LPPL v1.3c or later
 % Override the default \small, which looks odd with Inconsolata.
 \renewcommand{\MacroFont}{\normalsize\ttfamily}
 \usepackage[extra]{\jobname}
+\ifdefined\graphicspath
 \graphicspath{{emo-graphics/}}
+\fi
 \usepackage{enumitem}
 \usepackage{parskip}
 \usepackage{inconsolata}
@@ -185,8 +187,8 @@ Released under LPPL v1.3c or later
 % ======================================================================================
 % \fi
 %
-% \changes{0.2}{2023-03-23}{Prefix file names with |emo-| for uniqueness}
-% \changes{0.2}{2023-03-23}{Extract with pdftex, document with pdflatex}
+% \changes{0.2}{2023-03-23}{Prefix file names with \texttt{emo-} for uniqueness}
+% \changes{0.2}{2023-03-23}{Extract with pdftex (no `la'), document with pdflatex}
 % \changes{0.2}{2023-03-23}{Include PDF graphics directly, without directory}
 %
 % \GetFileInfo{\jobname.dtx}
@@ -216,7 +218,7 @@ Released under LPPL v1.3c or later
 % \maketitle
 %
 % \begin{abstract}
-% \noindent{}emo implements the |\emo|\marg{emoji-name} command for including
+% \noindent{}Emo implements the |\emo|\marg{emoji-name} command for including
 % color emoji such as |\emo{desert-island}| for \emo{desert-island} or
 % |\emo{parrot}| for \emo{parrot} in your documents independent of LaTeX engine.
 % The implementation uses the Noto color emoji font if the engine supports it
@@ -490,7 +492,9 @@ Released under LPPL v1.3c or later
 % \end{itemize}
 %
 %
-% \StopEventually{\PrintChanges\PrintIndex}
+% \StopEventually{^^A
+%     \PrintChanges^^A
+%     \PrintIndex}
 %
 %
 % ^^A ==================================================================================
@@ -521,9 +525,11 @@ Released under LPPL v1.3c or later
 % ^^A ----------------------------------------------------------------------------------
 % \subsection{Package Options}
 %
-% Emo's \textsf{extra} and \textsf{index} options are simple flags. So, we
-% declare a |\newif| for each option and, if the package use includes an option,
-% it just toggles the conditional's state:
+% \begin{macro}{ifemo@extra}
+% \begin{macro}{ifemo@index}
+% Emo's \textsf{extra} and \textsf{index} options are simple flags. So we
+% declare a new conditional for each and, if |\usepackage| includes an option,
+% toggle the conditional's state.
 %    \begin{macrocode}
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
@@ -531,6 +537,8 @@ Released under LPPL v1.3c or later
 \DeclareOption{index}{\emo@indexingtrue}
 \ProcessOptions\relax
 %    \end{macrocode}
+% \end{macro}
+% \end{macro}
 %
 %
 % ^^A ----------------------------------------------------------------------------------
@@ -544,12 +552,23 @@ Released under LPPL v1.3c or later
 \RequirePackage[utf8]{inputenc}
 %    \end{macrocode}
 %
-% Depending on TeX engine, this package requires either |fontspec| or |graphicx|
-% as the emoji-emitting backend. In turn, to tell the engines apart, it requires
-% |iftex|.
+% \begin{macro}{ifemo@usefont}
+% We need a third conditional for selecting the backend. We load and use |iftex|
+% to correctly initialize the new backend selector. Originally, I didn't bother
+% with the third conditional. But that makes it inconvenient to add support for
+% other LaTeX-like engines such as LaTeXML.
 %    \begin{macrocode}
+\newif\ifemo@usefont\emo@usefontfalse
 \RequirePackage{iftex}
-\ifluatex
+\ifluatex\emo@usefonttrue\fi
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% Depending on TeX engine, this package requires either |fontspec| or |graphicx|
+% as the emoji-emitting backend.
+%    \begin{macrocode}
+\ifemo@usefont
 \RequirePackage{fontspec}
 \else
 \RequirePackage{graphicx}
@@ -657,7 +676,7 @@ Released under LPPL v1.3c or later
 % that in a group that also uses the previously declared Noto color emoji font.
 % The fallback version instead includes a suitably sized PDF graphic.
 %    \begin{macrocode}
-\ifluatex
+\ifemo@usefont
 \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
 \newcommand\emo[1]{%
     \emo@ifdef{#1}{%
@@ -692,7 +711,7 @@ Released under LPPL v1.3c or later
 % doing so breaks the package documentation. So |\char| it is.
 %    \begin{macrocode}
 \ifemo@extra
-\ifluatex
+\ifemo@usefont
 \newfontface\emo@chinese{emo-lingchi.otf}
 \newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%
