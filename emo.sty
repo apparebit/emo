@@ -23,6 +23,11 @@
 \newif\ifemo@usefont\emo@usefontfalse
 \RequirePackage{iftex}
 \ifluatex\emo@usefonttrue\fi
+\def\emo@supports#1{%
+    T\ifcsname#1\endcsname%
+    \expandafter T\else\expandafter F\fi%
+}
+\if\emo@supports{iflatexml}\emo@usefonttrue\fi
 \ifemo@usefont
 \RequirePackage{fontspec}
 \else

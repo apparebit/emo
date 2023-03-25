@@ -187,9 +187,10 @@ Released under LPPL v1.3c or later
 % ======================================================================================
 % \fi
 %
-% \changes{0.2}{2023-03-23}{Prefix file names with \texttt{emo-} for uniqueness}
-% \changes{0.2}{2023-03-23}{Extract with pdftex (no `la'), document with pdflatex}
-% \changes{0.2}{2023-03-23}{Include PDF graphics directly, without directory}
+% \changes{0.2}{}{Prefix all file names with \texttt{emo-} for uniqueness}
+% \changes{0.2}{}{Use pdftex for extracting files from emo.dtx,
+%     generate documentation with pdflatex}
+% \changes{0.2}{}{Include PDF graphics directly, without providing directory}
 %
 % \GetFileInfo{\jobname.dtx}
 %
@@ -542,7 +543,7 @@ Released under LPPL v1.3c or later
 %
 %
 % ^^A ----------------------------------------------------------------------------------
-% \subsection{Dependencies}
+% \subsection{Setup Including Dependencies}
 %
 % The dependency on |inputenc| effectively declares this file's encoding to be
 % UTF-8. The XeTeX and LuaTeX engines already expect files to be encoded that
@@ -553,10 +554,11 @@ Released under LPPL v1.3c or later
 %    \end{macrocode}
 %
 % \begin{macro}{ifemo@usefont}
-% We need a third conditional for selecting the backend. We load and use |iftex|
-% to correctly initialize the new backend selector. Originally, I didn't bother
-% with the third conditional. But that makes it inconvenient to add support for
-% other LaTeX-like engines such as LaTeXML.
+% \changes{0.2}{}{Introduce conditional to abstract over backend selection}
+% Define a third conditional for selecting the backend. Originally, I didn't
+% bother with this, simply required |iftex|, and used |\ifluatex| throughout the
+% package. But that unnecessarily complicates support for other LaTeX-like
+% engines.
 %    \begin{macrocode}
 \newif\ifemo@usefont\emo@usefontfalse
 \RequirePackage{iftex}
@@ -564,9 +566,27 @@ Released under LPPL v1.3c or later
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{emo@supports}
+% \changes{0.2}{}{Add support for LaTeXML}
+% In fact, \href{https://math.nist.gov/~BMiller/LaTeXML/}{LaTeXML} is such a
+% LaTeX-like engine. Since it translates the source code to HTML via XML, using
+% fonts is the correct strategy for adding LaTeXML support to emo. Conveniently,
+% that engine provides |\iflatexml| for engine-specific code and also supports
+% |\ifcsname| for detecting the previous conditional. Alas, correctly closing
+% what may or may not be a conditional is
+% \href{https://tex.stackexchange.com/questions/368807/command-ifcsname-not-expanding-correctly-when-used-in-macro}{is
+% a little tricky}:
+%    \begin{macrocode}
+\def\emo@supports#1{%
+    T\ifcsname#1\endcsname%
+    \expandafter T\else\expandafter F\fi%
+}
+\if\emo@supports{iflatexml}\emo@usefonttrue\fi
+%    \end{macrocode}
+% \end{macro}
 %
-% Depending on TeX engine, this package requires either |fontspec| or |graphicx|
-% as the emoji-emitting backend.
+% Now that |\ifemo@usefont| has been defined and enabled as needed, it's time to
+% actually load |fontspec| or |graphicx| as emoji-emitting backend:
 %    \begin{macrocode}
 \ifemo@usefont
 \RequirePackage{fontspec}
