@@ -7,12 +7,12 @@
 \graphicspath{{emo-graphics/}}
 \fi
 
-\definecolor{wordboxfg}{HTML}{A5B5C7}
-\definecolor{lineboxfg}{HTML}{E6E6E6}
-\definecolor{lineboxbg}{HTML}{F6F6F6}
+\definecolor{wordboxframe}{HTML}{B20000} %{A5B5C7}
+\definecolor{lineboxframe}{HTML}{696B6F}
+\definecolor{lineboxbg}{HTML}{E4E9F3}
 
-\newcommand\wbx[1]{\fcolorbox{wordboxfg}{white}{#1}}
-\newcommand\lbx[1]{\fcolorbox{lineboxfg}{lineboxbg}{#1}}
+\newcommand\wbx[1]{\fcolorbox{wordboxframe}{white}{#1}}
+\newcommand\lbx[1]{\fcolorbox{lineboxframe}{lineboxbg}{#1}}
 
 \begin{document}
 % --------------------------------------------------------------------------------------
@@ -32,7 +32,7 @@
 \setlength{\fboxsep}{4pt}
 
 \vspace{1ex}
-\centering\noindent\colorbox{lineboxbg}{
+\centering\noindent\lbx{
     It's \lingchi!
     Please \YHWH,
     have mercy
