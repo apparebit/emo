@@ -31,9 +31,9 @@ To **configure the emoji**, run `python3 config/emo.py` with appropriate
 arguments. The [package documentation](emo.pdf) explains the configuration tool
 in detail, but you may find the `-h` for help option sufficient to get started.
 
-To **install this package**, place `emo.def`, `emo.sty`, `emo-lingchi.otf`, and
-the graphic files matching `emo-graphics/emo-*.pdf` somewhere where LaTeX can
-find them. In a pinch, your project directory will do.
+To **install this package**, place `emo.def`, `emo.sty`, `emo.sty.ltxml`,
+`emo-lingchi.otf`, and the `emo-graphics` directory with the fallback PDFs
+somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 ## Supported Emoji
 

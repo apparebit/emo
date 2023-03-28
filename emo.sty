@@ -23,11 +23,6 @@
 \newif\ifemo@usefont\emo@usefontfalse
 \RequirePackage{iftex}
 \ifluatex\emo@usefonttrue\fi
-\def\emo@supports#1{%
-    T\ifcsname#1\endcsname%
-    \expandafter T\else\expandafter F\fi%
-}
-\if\emo@supports{iflatexml}\emo@usefonttrue\fi
 \ifemo@usefont
 \RequirePackage{fontspec}
 \else
@@ -74,13 +69,13 @@
 \newcommand\emo[1]{%
     \emo@ifdef{#1}{%
         \emo@index{#1}%
-        \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-#1}}%
+        \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-#1}}%
     }%
 }
 \fi
 \ifemo@extra
 \ifemo@usefont
-\newfontface\emo@chinese{emo-lingchi.otf}
+\newfontface\emo@chinese{emo-lingchi.ttf}
 \newfontface\emo@hebrew{LinLibertine_R.otf}
 \newcommand\lingchi{%
     \emo@index{lingchi}%
@@ -93,11 +88,11 @@
 \else
 \newcommand\lingchi{%
     \emo@index{lingchi}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-lingchi}}%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-lingchi}}%
     \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-YHWH}}%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-YHWH}}%
     \xspace}
 \fi
 \fi
