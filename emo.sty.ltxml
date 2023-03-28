@@ -1,0 +1,27 @@
+package LaTeXML::Package::Pool;
+use strict;
+use warnings;
+use LaTeXML::Package;
+
+# ----- Declare package and conditionals -----
+RawTeX(<<'EOTeX');
+\ProvidesPackage{emo}
+    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
+\newif\ifemo@extra\emo@extrafalse
+EOTeX
+
+## ----- Declare package options -----
+DeclareOption('extra', '\emo@extratrue');
+DeclareOption('index', '');  # Ignore
+ProcessOptions();
+
+## ----- Load emoji table and define \emo{} -----
+InputDefinitions('emo', type => 'def', noltxml => 1);
+DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
+
+## ----- If enabled, define \lingchi and \YHWH -----
+if (IfCondition(T_CS('\ifemo@extra'))) {
+    RequirePackage('xspace');
+    DefMacro('\lingchi', "\x{51cc}\x{9072}\\xspace");
+    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}\\xspace")
+}
