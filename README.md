@@ -34,7 +34,7 @@ arguments. The [package documentation](emo.pdf) explains the configuration tool
 in detail, but you may find the `-h` for help option sufficient to get started.
 
 To **install this package**, place `emo.def`, `emo.sty`, `emo.sty.ltxml`,
-`emo-lingchi.otf`, and the `emo-graphics` directory with the fallback PDF files
+`emo-lingchi.ttf`, and the `emo-graphics` directory with the fallback PDF files
 somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 ## Supported Emoji
