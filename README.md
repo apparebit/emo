@@ -3,10 +3,11 @@
 This package defines the `\emo{<emoji-name>}` macro for including color emoji in
 a document no matter the LaTeX engine. It uses the Noto color emoji font if the
 engine supports doing so and falls back onto PDF graphics otherwise. In either
-case, `\emo{desert-island}` results in 🏝 and `\emo{parrot}` results in 🦜. emo
+case, `\emo{desert-island}` results in 🏝 and `\emo{parrot}` results in 🦜. Emo
 may come in particularly handy when dealing with academic publishers that
 provide only minimal support for non-Latin scripts (cough,
-[ACM](https://www.acm.org), cough).
+[ACM](https://www.acm.org), cough). This package supports conversion to HTML via
+[LaTeXML](https://github.com/brucemiller/LaTeXML).
 
 ## Package Options
 
@@ -21,7 +22,8 @@ each use of an emoji into an emo index or `.edx` file.
 
 To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
 that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
-but also generates the package documentation.
+but also generates the package documentation. The embedded files are `build.sh`,
+`emo.ins`, `emo.sty`, `emo.sty.ltxml`, and `README.md`.
 
 To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
 shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
@@ -32,7 +34,7 @@ arguments. The [package documentation](emo.pdf) explains the configuration tool
 in detail, but you may find the `-h` for help option sufficient to get started.
 
 To **install this package**, place `emo.def`, `emo.sty`, `emo.sty.ltxml`,
-`emo-lingchi.otf`, and the `emo-graphics` directory with the fallback PDFs
+`emo-lingchi.otf`, and the `emo-graphics` directory with the fallback PDF files
 somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 ## Supported Emoji
@@ -54,8 +56,8 @@ into PDF files and generating an updated `emo.def` file.
 
 ## Copyright and Licensing
 
-This package combines code written in LaTeX and Python with Unicode data about
-emoji as well as graphics and fonts derived from Google's Noto fonts. As a
+This package combines code written in LaTeX, Python, and Perl with Unicode data
+about emoji as well as graphics and fonts derived from Google's Noto fonts. As a
 result, a number of different licenses apply, all of which are [OSI
 approved](https://opensource.org/licenses/) and non-copyleft:
 
@@ -68,7 +70,7 @@ approved](https://opensource.org/licenses/) and non-copyleft:
   * The [emoji-test.txt](config/emoji-test.txt) configuration file is a data
     file from [Unicode TR-51](https://unicode.org/reports/tr51/) and hence
     subject to the [Unicode License](https://www.unicode.org/license.txt).
-  * The `emo-lingchi.otf` font is a two-glyph subset of the serif traditional
+  * The `emo-lingchi.ttf` font is a two-glyph subset of the serif traditional
     Chinese version of Google's [Noto
     fonts](https://github.com/notofonts/noto-cjk) and hence subject to the [SIL
     Open Font License v1.1](https://scripts.sil.org/ofl).
