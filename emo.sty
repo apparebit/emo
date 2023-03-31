@@ -13,7 +13,7 @@
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo}
-    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
+    [2023/03/31 v0.2 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
@@ -69,7 +69,8 @@
 \newcommand\emo[1]{%
     \emo@ifdef{#1}{%
         \emo@index{#1}%
-        \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-#1}}%
+        \raisebox{-0.2ex}{%
+            \includegraphics[height=1em]{emo-graphics/emo-#1}}%
     }%
 }
 \fi
@@ -83,16 +84,21 @@
     \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
-    \begingroup\textdir TRT\emo@hebrew \char"5D9\char"5D4\char"5D5\char"5D4\endgroup%
+    \begingroup%
+        \textdir TRT%
+        \emo@hebrew \char"5D9\char"5D4\char"5D5\char"5D4%
+    \endgroup%
     \xspace}
 \else
 \newcommand\lingchi{%
     \emo@index{lingchi}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-lingchi}}%
+    \raisebox{-0.2ex}{%
+        \includegraphics[height=1em]{emo-graphics/emo-lingchi}}%
     \xspace}
 \newcommand\YHWH{%
     \emo@index{YHWH}%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-YHWH}}%
+    \raisebox{-0.2ex}{%
+        \includegraphics[height=1em]{emo-graphics/emo-YHWH}}%
     \xspace}
 \fi
 \fi
