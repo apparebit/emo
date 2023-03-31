@@ -15,7 +15,9 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from itertools import chain
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -27,8 +29,9 @@ from typing import (
 from urllib.request import urlopen
 
 # --------------------------------------------------------------------------------------
+# Provide a simple console logger
 
-class Log:
+class Logger:
     def __init__(self, out: TextIO = sys.stderr) -> None:
         self._out = out
         self._first_header = True
@@ -60,10 +63,154 @@ class Log:
     def info(self, text: str) -> None:
         self.pln(self.sgr('1;34', f'INFO: {text}', '0;39'))
 
-log = Log()
+logger = Logger()
 
 # --------------------------------------------------------------------------------------
-# Emoji Names
+# Build a self-contained `demo.html`
+
+STYLE_LINK = re.compile(
+    f'<link rel="stylesheet" href="(?P<sheet>[^"]+)" type="text/css">'
+)
+
+def make_demo():
+    # Write extra styles to file.
+    logger.info('Writing auxiliary style sheet "demo.css"')
+    with open('demo.css', mode='w', encoding='utf8') as file:
+        file.write("""
+:root {
+    font-size: 300%;
+}
+        """)
+
+    # Convert to HTML and read in result.
+    logger.info('Converting LaTeX source in "demo.tex" to HTML in "demo.tmp.html"')
+    subprocess.run([
+        'latexmlc',
+        '--css=demo.css',
+        '--destination=demo.tmp.html',
+        'demo.tex']
+    )
+    with open('demo.tmp.html', mode='r', encoding='utf8') as file:
+        content = file.read()
+
+    # Find all links to style sheets and replace them with CSS content.
+    style_sheets = []
+    fragments = []
+
+    last_index = 0
+    for link in STYLE_LINK.finditer(content):
+        fragments.append(content[last_index:link.start()])
+
+        style_sheet = link.group('sheet')
+        style_sheets.append(style_sheet)
+
+        logger.info(f'Loading style sheet "{style_sheet}"')
+        with open(style_sheet, mode='r', encoding='utf8') as file:
+            css = file.read()
+        if not css.startswith('\n'):
+            css = f'\n{css}'
+
+        fragments.append(f'<style>{css}</style>')
+        last_index = link.end()
+
+    fragments.append(content[last_index:])
+
+    # Write result and clean up.
+    logger.info(f'Writing self-contained HTML document "demo.html"')
+    with open('demo.html', mode='w', encoding='utf8') as file:
+        for fragment in fragments:
+            file.write(fragment)
+
+    os.unlink('demo.tmp.html')
+    for style_sheet in style_sheets:
+        os.unlink(style_sheet)
+
+# --------------------------------------------------------------------------------------
+# Build an archive for release
+
+EMO_FILES = (
+    'emo.def',
+    'emo.dtx',
+    'emo.pdf',
+    'emo-lingchi.ttf',
+    'README.md',
+    'config/emo.py',
+    'config/emoji-test.txt'
+)
+
+EMO_GRAPHICS = 'emo-graphics'
+
+EMO_METADATA = re.compile(
+    r"""
+    ^[ ]{4}\[
+        (?P<date>\d{4}/\d{1,2}/\d{1,2})
+        [ ]
+        v(?P<version>\d+\.\d+)
+        [ ]
+        (?P<info>[^\]]+)
+    \]
+    """,
+    re.VERBOSE | re.MULTILINE
+)
+
+def make_release() -> None:
+    # Determine repository root.
+    source = Path(__file__).parent.parent
+
+    # Determine package metadata.
+    metadata = EMO_METADATA.search((source / 'emo.dtx').read_text(encoding='utf8'))
+    if metadata is None:
+        raise ValueError(f'Package metadata missing from "{source / "emo.dtx"}"')
+
+    version = metadata.group('version')
+    logger.info(f'Preparing release {version} for "{source}"')
+
+    # Make sure no archive exists.
+    archive = source / f'emo-{version}.zip'
+    if archive.exists():
+        raise ValueError(
+            f'Archive file "{archive}" already exists, please move out of way.'
+        )
+
+    # Set up staging directory.
+    staging = source / 'emo'
+    if staging.exists():
+        raise ValueError(
+            f'Staging directory "{staging}" already exists, please move out of way.'
+        )
+    logger.info(f'Creating staging directory "{staging}"')
+    staging.mkdir()
+
+    # Process all files belonging into release.
+    for path in chain(map(Path, EMO_FILES), source.glob('emo-graphics/emo-*.pdf')):
+        path = source / path
+
+        # To stage a file in the repository root, just copy it.
+        if path.parent == source:
+            logger.info(f'Staging "{path.name}"')
+            shutil.copy(path, staging)
+            continue
+
+        # To stage a file in a subdirectory, get relative path and, if necessary,
+        # recreate path in staging area. Then copy into that subdirectory.
+        nested_staging = staging / path.parent.relative_to(source)
+        if not nested_staging.exists():
+            logger.info(f'Creating nested staging directory "{nested_staging}"')
+            nested_staging.mkdir(parents=True)
+
+        logger.info(f'Staging "{path.relative_to(source)}"')
+        shutil.copy(path, nested_staging)
+
+    # Create archive.
+    shutil.make_archive(
+        str(archive.with_suffix('')),
+        'zip',
+        root_dir=staging.parent,
+        base_dir=staging.name,
+    )
+
+# --------------------------------------------------------------------------------------
+# Normalize emoji names
 
 PUNCTUATION = re.compile(r"""["'’“”&!(),:]""")
 SEPARATORS = re.compile(r'[ _\-]+')
@@ -136,7 +283,7 @@ def to_name(value: str) -> str:
 
 
 # --------------------------------------------------------------------------------------
-# Emoji Codepoints
+# Handle emoji codepoints
 
 def to_codepoint(cp: Union[int, str]) -> int:
     if isinstance(cp, int):
@@ -162,7 +309,7 @@ def regional_indicator_to_letter(cp: int) -> str:
 
 
 # --------------------------------------------------------------------------------------
-# Emoji Groups
+# Normalize emoji group and subgroup names
 
 AMPERSAND = re.compile('[ ]*&[ ]*')
 
@@ -199,7 +346,7 @@ def split_subgroup_selector(identifier: str) -> List[str]:
 
 
 # --------------------------------------------------------------------------------------
-# Emoji Status
+# Define emoji status
 
 class Status(str, Enum):
     COMPONENT = 'component'
@@ -209,7 +356,7 @@ class Status(str, Enum):
 
 
 # --------------------------------------------------------------------------------------
-# Emoji Descriptor
+# Define emoji descriptor
 
 @dataclass(frozen=True, order=True)
 class Emoji:
@@ -307,7 +454,7 @@ class Emoji:
 
 
 # --------------------------------------------------------------------------------------
-# Parser for Unicode TR-51's 'emoji-test.txt' File
+# Parse Unicode TR-51's `emoji-test.txt`
 
 NameTable = Mapping[str, Emoji]
 CodepointTable = Mapping[Tuple[int, ...], Emoji]
@@ -483,7 +630,7 @@ class RegistryParser:
 
 
 # --------------------------------------------------------------------------------------
-# Emoji Registry
+# Maintain emoji registry
 
 class Registry:
     def __init__(
@@ -594,7 +741,7 @@ class Registry:
 
 
 # --------------------------------------------------------------------------------------
-# Noto Emoji Sources
+# Download Noto emoji sources
 
 NOTO_REPOSITORY = 'https://github.com/googlefonts/noto-emoji/archive/refs/heads/main.zip'
 
@@ -625,26 +772,26 @@ def is_valid_noto_emoji(noto_path: Path) -> bool:
 def ensure_local_noto_emoji(noto_path: Path, verbose: bool = False) -> None:
     if is_valid_noto_emoji(noto_path):
         if verbose:
-            log.info(f'Seemingly valid Noto emoji sources at "{noto_path}"')
+            logger.info(f'Seemingly valid Noto emoji sources at "{noto_path}"')
         return
 
     noto_zip = noto_path.with_name('noto-emoji.zip')
     if not noto_zip.exists():
         if verbose:
-            log.info(f'Downloading Noto emoji sources from "{NOTO_REPOSITORY}"')
+            logger.info(f'Downloading Noto emoji sources from "{NOTO_REPOSITORY}"')
         with urlopen(NOTO_REPOSITORY) as response, open(noto_zip, mode='wb') as file:
             shutil.copyfileobj(response, file)
 
     # With archive representing main branch, it is unpacked into
     # noto-emoji-main. We fix that after unpacking.
     if verbose:
-        log.info(f'Unpacking Noto emoji sources into "{noto_path}"')
+        logger.info(f'Unpacking Noto emoji sources into "{noto_path}"')
     shutil.unpack_archive(noto_zip, noto_path.parent, 'zip')
     noto_path.with_name('noto-emoji-main').rename(noto_path)
 
 
 # --------------------------------------------------------------------------------------
-# SVG to PDF Conversion
+# Convert SVG to PDF
 
 def remove_page_group_object(document: dict) -> Optional[dict]:
     """Remove the /Page /Group object from the document in qpdf's JSON format."""
@@ -741,15 +888,16 @@ class Converter:
         target = self.target_dir / emoji.pdf_file
         if not target.exists():
             if verbose:
-                log.info(f'Converting "{source}" to "{target}"')
+                logger.info(f'Converting "{source}" to "{target}"')
             convert_svg_to_pdf(self.rsvg_convert, source, target)
             if verbose:
-                log.info(f'Fixing /Page /Group in "{target}"')
+                logger.info(f'Fixing /Page /Group in "{target}"')
             fix_pdf(self.qpdf, target)
         return target
 
 
 # --------------------------------------------------------------------------------------
+# Provide tool help and command line options
 
 DESCRIPTION = """
 Generate emoji table and PDF files for the given selectors. A selector may be a
@@ -766,31 +914,10 @@ but included in the emoji table.
 def resolved_path(path: str) -> Path:
     return Path(path).resolve()
 
-
 def create_parser() -> ArgumentParser:
     parser = ArgumentParser(
         description=DESCRIPTION,
         formatter_class=ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        '--show-group-names',
-        action='store_true',
-        help='show supported group, subgroup names and exit',
-    )
-    parser.add_argument(
-        '--show-emoji-names',
-        action='store_true',
-        help='show supported emoji names and exit',
-    )
-    parser.add_argument(
-        '--show-special-names',
-        action='store_true',
-        help='show map from (simplified) Unicode names to emoji names and exit'
-    )
-    parser.add_argument(
-        '--show-names',
-        action='store_true',
-        help='show group, emoji, as well as special names and exit'
     )
     parser.add_argument(
         '--dry-run',
@@ -830,6 +957,39 @@ def create_parser() -> ArgumentParser:
         metavar='PATH',
         help='use path for file with LaTeX emoji table',
     )
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        '--show-group-names',
+        action='store_true',
+        help='show supported group, subgroup names and exit',
+    )
+    group.add_argument(
+        '--show-emoji-names',
+        action='store_true',
+        help='show supported emoji names and exit',
+    )
+    group.add_argument(
+        '--show-special-names',
+        action='store_true',
+        help='show map from (simplified) Unicode names to emoji names and exit'
+    )
+    group.add_argument(
+        '--show-names',
+        action='store_true',
+        help='show group, emoji, as well as special names and exit'
+    )
+    group.add_argument(
+        '--make-demo',
+        action='store_true',
+        help='make the demo document and exit',
+    )
+    group.add_argument(
+        '-r', '--make-release',
+        action='store_true',
+        help='make a release and exit',
+    )
+
     parser.add_argument(
         'selectors',
         nargs='*',
@@ -837,29 +997,34 @@ def create_parser() -> ArgumentParser:
     )
     return parser
 
+# --------------------------------------------------------------------------------------
+# Show group, emoji, and special names
+
 def show_names(registry: Registry, options: Any) -> bool:
     showed_something = False
 
     if options.show_group_names or options.show_names:
-        log.header('Supported groups and subgroups:')
+        logger.header('Supported groups and subgroups:')
         for group in registry.group_names():
             for subgroup in registry.subgroup_names(group):
-                log.detail(f'{group}::{subgroup}')
+                logger.detail(f'{group}::{subgroup}')
         showed_something = True
     if options.show_emoji_names or options.show_names:
-        log.header('Supported emoji names:')
+        logger.header('Supported emoji names:')
         names = list(registry.emoji_names())
         names.sort()
         for name in names:
-            log.detail(f'{name}')
+            logger.detail(f'{name}')
         showed_something = True
     if options.show_special_names or options.show_names:
-        log.header('Map from (simplified) Unicode to (special) emoji names:')
+        logger.header('Map from (simplified) Unicode to (special) emoji names:')
         for unicode, selector in RENAMING.items():
-            log.detail(f'{unicode:40s} ▶ {selector}')
+            logger.detail(f'{unicode:40s} ▶ {selector}')
         showed_something = True
     return showed_something
 
+# --------------------------------------------------------------------------------------
+# Create emoji inventory
 
 SPECIAL_FILES = ('emo-lingchi.pdf', 'emo-YHWH.pdf')
 
@@ -879,10 +1044,12 @@ def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
             if emoji is not None:
                 inventory.append(emoji)
             elif options.verbose:
-                log.warning(f'"{entry.name}" does not depict an emoji')
+                logger.warning(f'"{entry.name}" does not depict an emoji')
 
     return inventory
 
+# --------------------------------------------------------------------------------------
+# Write emoji table
 
 def write_emoji_table(
     requested_emoji: List[Emoji], existing_emoji: List[Emoji], options: Any
@@ -902,14 +1069,29 @@ def write_emoji_table(
 
     return all_emoji
 
+# --------------------------------------------------------------------------------------
+# Run this script
 
 def main() -> None:
-    options = create_parser().parse_args()
-    registry = Registry.from_file(options.registry)
-    if show_names(registry, options):
-        return
-
     try:
+        # Parse command line options.
+        options = create_parser().parse_args()
+
+        # Create release.
+        if (options.make_release or options.make_demo) and options.dry_run:
+            raise ValueError('Unable to dry run selected build function')
+        elif options.make_release:
+            make_release()
+            return
+        elif options.make_demo:
+            make_demo()
+            return
+
+        # Populate registry, maybe list names.
+        registry = Registry.from_file(options.registry)
+        if show_names(registry, options):
+            return
+
         # Determine requested emoji.
         requested_emoji = registry.select(*options.selectors)
 
@@ -921,7 +1103,7 @@ def main() -> None:
         # Create inventory of existing emoji.
         existing_emoji = create_inventory(registry, options)
 
-        # Noto emoji.
+        # Download Noto emoji sources if they haven't been before.
         if not options.dry_run:
             ensure_local_noto_emoji(options.noto_emoji, options.verbose)
 
@@ -934,10 +1116,10 @@ def main() -> None:
         all_emoji = write_emoji_table(requested_emoji, existing_emoji, options)
 
         if options.verbose:
-            log.info('Supported emoji: ' + ' '.join(e.display for e in all_emoji))
+            logger.info('Supported emoji: ' + ' '.join(e.display for e in all_emoji))
 
     except Exception as x:
-        log.error(str(x))
+        logger.error(str(x))
 
 
 if __name__ == '__main__':
