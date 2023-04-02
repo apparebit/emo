@@ -6,8 +6,11 @@ engine supports doing so and falls back onto PDF graphics otherwise. In either
 case, `\emo{desert-island}` results in 🏝 and `\emo{parrot}` results in 🦜. Emo
 may come in particularly handy when dealing with academic publishers that
 provide only minimal support for non-Latin scripts (cough,
-[ACM](https://www.acm.org), cough). This package supports conversion to HTML via
-[LaTeXML](https://github.com/brucemiller/LaTeXML).
+[ACM](https://www.acm.org), cough).
+
+Emo's source repository is <https://github.com/apparebit/emo>. It also is
+available [through CTAN](https://ctan.org/pkg/emo). Emo supports conversion
+to HTML [with LaTeXML](https://github.com/brucemiller/LaTeXML).
 
 ## Package Options
 
@@ -41,13 +44,13 @@ somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 By default, emo supports only a few emoji:
 
-1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💱 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🤯 🦜 🧑‍⚖️ 🧻 🧾
+1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💥 💱 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🤯 🦜 🧑‍⚖️ 🧻 🧾
 
 Their names are keycap-one, biohazard, balance-scale, check-mark, eu, foggy,
 globe-africa-europe, classical-building, desert-island, stadium, rainbow-flag,
-label, eye, busts, currency-exchange, floppy-disk, triangular-ruler, pager,
-loupe-left, detective, wastebasket, enraged-face, stop-sign, robot, handshake,
-exploding-head, parrot, judge, roll-of-paper, and receipt.
+label, eye, busts, collision, currency-exchange, floppy-disk, triangular-ruler,
+pager, loupe-left, detective, wastebasket, enraged-face, stop-sign, robot,
+handshake, exploding-head, parrot, judge, roll-of-paper, and receipt.
 
 The [package's documentation](emo.pdf) explains the underlying naming scheme and
 also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)

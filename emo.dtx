@@ -21,8 +21,11 @@ engine supports doing so and falls back onto PDF graphics otherwise. In either
 case, `\emo{desert-island}` results in 🏝 and `\emo{parrot}` results in 🦜. Emo
 may come in particularly handy when dealing with academic publishers that
 provide only minimal support for non-Latin scripts (cough,
-[ACM](https://www.acm.org), cough). This package supports conversion to HTML via
-[LaTeXML](https://github.com/brucemiller/LaTeXML).
+[ACM](https://www.acm.org), cough).
+
+Emo's source repository is <https://github.com/apparebit/emo>. It also is
+available [through CTAN](https://ctan.org/pkg/emo). Emo supports conversion
+to HTML [with LaTeXML](https://github.com/brucemiller/LaTeXML).
 
 
 ## Package Options
@@ -59,13 +62,13 @@ somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 By default, emo supports only a few emoji:
 
-1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💱 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🤯 🦜 🧑‍⚖️ 🧻 🧾
+1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💥 💱 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🤯 🦜 🧑‍⚖️ 🧻 🧾
 
 Their names are keycap-one, biohazard, balance-scale, check-mark, eu, foggy,
 globe-africa-europe, classical-building, desert-island, stadium, rainbow-flag,
-label, eye, busts, currency-exchange, floppy-disk, triangular-ruler, pager,
-loupe-left, detective, wastebasket, enraged-face, stop-sign, robot, handshake,
-exploding-head, parrot, judge, roll-of-paper, and receipt.
+label, eye, busts, collision, currency-exchange, floppy-disk, triangular-ruler,
+pager, loupe-left, detective, wastebasket, enraged-face, stop-sign, robot,
+handshake, exploding-head, parrot, judge, roll-of-paper, and receipt.
 
 The [package's documentation](emo.pdf) explains the underlying naming scheme and
 also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)
@@ -158,7 +161,7 @@ Released under LPPL v1.3c or later
 %<package>\NeedsTeXFormat{LaTeX2e}
 %<package>\ProvidesPackage{emo}
 %<*scaffold,package>
-    [2023/03/31 v0.2 emo•ji for all (LaTeX engines)]
+    [2023/04/01 v0.2 emo•ji for all (LaTeX engines)]
 %</scaffold,package>
 % ======================================================================================
 %<*driver>
@@ -178,7 +181,10 @@ Released under LPPL v1.3c or later
 \let\oldnormalfont\normalfont
 \def\normalfont{\oldnormalfont\mdseries}
 
+\usepackage{xcolor}
 \usepackage{hyperref}
+\definecolor{spot}{HTML}{353598}
+\hypersetup{allcolors=spot}
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
@@ -239,8 +245,10 @@ Released under LPPL v1.3c or later
 % ^^A ==================================================================================
 % \section{Installation}
 %
-% Installation of the emo package is fairly straightforward, though it does
-% involve a lot more files than usual.
+% The emo package is available through its
+% \href{https://github.com/apparebit/emo}{source repository} or through
+% \href{https://ctan.org/pkg/emo}{CTAN}. Installation is fairly
+% straightforward, though it does involve a lot more files than usual.
 %
 % \begin{enumerate}
 % \item Start by extracting this package's files from |emo.dtx| by running:
@@ -509,98 +517,9 @@ Released under LPPL v1.3c or later
 %
 %
 % ^^A ==================================================================================
-% \section{LaTeXML Binding}
-% \changes{0.2}{}{Add LaTeXML binding}
-%
-% To support conversion from LaTeX to HTML, emo supports
-% \href{https://github.com/brucemiller/LaTeXML}{LaTeXML}. The so-called binding
-% effectively is a (much simplified) re-implementation of emo's core
-% functionality. The binding is written in Perl against LaTeXML's API. Out of
-% emo's features, the binding ignores the \textsf{index} option, does not
-% perform error checking on emoji names, and simply emits necessary Unicode
-% codepoints without switching fonts. Ignoring \textsf{index} and omitting error
-% checking is based on the assumption that conversion to HTML is not the only
-% use of the document's LaTeX sources and hence emo's implementation for LaTeX
-% suffices. Fonts are not hardcoded because browsers' use of OpenType fonts is
-% more flexible and powerful, so emulating LaTeX's lesser handling seems
-% undesirable.
-%
-% Let's get started with the binding:
-%    \begin{macrocode}
-%<*latexml-binding>
-%    \end{macrocode}
-%
-% The binding starts with an explicit inline preamble because |docstrip| does
-% not alllow for a redefinition of the starting characters of a line comment.
-% It is followed by the Perl dependencies.
-%    \begin{macrocode}
-## emo's LaTeXML bindings.
-## (C) 2023 by Robert Grimm.
-## Released under LPPL v1.3c or later.
-use strict;
-use warnings;
-use LaTeXML::Package;
-%    \end{macrocode}
-%
-% \begin{macro}{\ifemo@extra}
-% Next, we use raw TeX to declare the LaTeX package and define the |emo@extra|
-% conditional. There is no need to define the |emo@indexing| conditional, since
-% it corresponds to the unsupported \textsf{index} option.
-%    \begin{macrocode}
-RawTeX(<<'EOTeX');
-\ProvidesPackage{emo}
-    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
-\newif\ifemo@extra\emo@extrafalse
-EOTeX
-%    \end{macrocode}
-% \end{macro}
-%
-% Option prcessing is almost trivial:
-%    \begin{macrocode}
-DeclareOption('extra', '\emo@extratrue');
-DeclareOption('index', '');
-ProcessOptions();
-%    \end{macrocode}
-%
-% \begin{macro}{\emo@emoji@<name>}
-% \begin{macro}{\emo}
-% Just like the actual package implementation, the binding reads the emoji table
-% from |emo.def|. Similar to the actual implementation of the |\emo| macro when
-% running under LuaLaTeX, the binding expands the named entry from the emoji
-% table, producing the emoji's Unicode codepoints.
-%    \begin{macrocode}
-InputDefinitions('emo', type => 'def', noltxml => 1);
-DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\lingchi}
-% \begin{macro}{\YHWH}
-% If the |emo@extra| conditional is enabled, require the |xspace| package and then
-% provide minimal re-definitions of the |\lingchi| and |\YHWH| macros. Both simply
-% expand to the necessary Unicode codepoints.
-%    \begin{macrocode}
-if (IfCondition(T_CS('\ifemo@extra'))) {
-    RequirePackage('xspace');
-    DefMacro('\lingchi', "\x{51cc}\x{9072}\\xspace");
-    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}\\xspace");
-}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% That's it for the binding.
-%    \begin{macrocode}
-%</latexml-binding>
-%    \end{macrocode}
-%
-%
-% ^^A ==================================================================================
 % \section{Implementation}
 %
-% We have already seen a simplified version of the implementation, even if it
-% was written in Perl. We are well-prepared for the real thing.
+% Let's get started with emo's implementation:
 %    \begin{macrocode}
 %<*package>
 %    \end{macrocode}
@@ -846,5 +765,101 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 %    \begin{macrocode}
 %</package>
 %    \end{macrocode}
+%
+%
+% ^^A ==================================================================================
+% \section{LaTeXML Binding}
+% \changes{0.2}{}{Add LaTeXML binding}
+%
+% To support conversion from LaTeX to HTML, emo includes a so-called binding for
+% \href{https://github.com/brucemiller/LaTeXML}{LaTeXML}. It effectively is a
+% (much simplified) re-implementation of emo's core functionality, only written
+% in Perl against LaTeXML's API. The binding ignores the \textsf{index} option
+% and does not perform error checking on emoji names. If either is important to
+% you, please compile the document with LaTeX first. Furthermore, the binding
+% emits necessary Unicode codepoints only, without font annotations. If you want
+% to specify fonts, please use a CSS fontstack.
+%
+% Asking package authors to reimplement their packages for LaTeXML seems
+% unreasonable to me. It leads to code duplication and places the maintenance
+% burden on package authors. Yet, right after announcing emo, the question of
+% LaTeXML support came up. LaTeXML includes the |latexml.sty| package, which
+% defines |\iflatexml|. I would have used that command to make the three-line
+% change to |emo.sty| necessary for LaTeX support, except |latexml.sty| contains
+% lots of other stuff that isn't needed. Always loading that only to detect
+% LaTeXML seems like a bad idea. Since reimplementing |\iflatexml| would require
+% a binding anyways, I just wrote a minimal binding. As I said, LaTeXML's
+% approach is broken.
+%
+% With that out of the way, let's get started:
+%    \begin{macrocode}
+%<*latexml-binding>
+%    \end{macrocode}
+%
+% The binding starts with an explicit preamble because |docstrip| does not
+% alllow for a redefinition of the starting characters of a line comment. It is
+% followed by the Perl dependencies.
+%    \begin{macrocode}
+## emo's LaTeXML binding.
+## (C) 2023 by Robert Grimm.
+## Released under LPPL v1.3c or later.
+use strict;
+use warnings;
+use LaTeXML::Package;
+%    \end{macrocode}
+%
+% \begin{macro}{\ifemo@extra}
+% Next, we use raw TeX to declare the LaTeX package and define the |emo@extra|
+% conditional. There is no need to define the |emo@indexing| conditional, since
+% it corresponds to the unsupported \textsf{index} option.
+%    \begin{macrocode}
+RawTeX(<<'EOTeX');
+\ProvidesPackage{emo}
+    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
+\newif\ifemo@extra\emo@extrafalse
+EOTeX
+%    \end{macrocode}
+% \end{macro}
+%
+% Option prcessing is almost trivial:
+%    \begin{macrocode}
+DeclareOption('extra', '\emo@extratrue');
+DeclareOption('index', '');
+ProcessOptions();
+%    \end{macrocode}
+%
+% \begin{macro}{\emo@emoji@<name>}
+% \begin{macro}{\emo}
+% Just like the actual package implementation, the binding reads the emoji table
+% from |emo.def|. Similar to the actual implementation of the |\emo| macro when
+% running under LuaLaTeX, the binding expands the named entry from the emoji
+% table, producing the emoji's Unicode codepoints.
+%    \begin{macrocode}
+InputDefinitions('emo', type => 'def', noltxml => 1);
+DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\lingchi}
+% \begin{macro}{\YHWH}
+% If the |emo@extra| conditional is enabled, require the |xspace| package and then
+% provide minimal re-definitions of the |\lingchi| and |\YHWH| macros. Both simply
+% expand to the necessary Unicode codepoints.
+%    \begin{macrocode}
+if (IfCondition(T_CS('\ifemo@extra'))) {
+    RequirePackage('xspace');
+    DefMacro('\lingchi', "\x{51cc}\x{9072}\\xspace");
+    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}\\xspace");
+}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% That's it for the binding, too.
+%    \begin{macrocode}
+%</latexml-binding>
+%    \end{macrocode}
+%
 %
 % \Finale

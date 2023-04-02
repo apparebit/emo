@@ -1,4 +1,4 @@
-\ProvidesFile{emo.def}[2023-03-21]
+\ProvidesFile{emo.def}[2023-04-01]
 \expandafter\def\csname emo@emoji@keycap-one\endcsname{1️⃣}
 \def\emo@emoji@biohazard{☣️}
 \expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}
@@ -13,6 +13,7 @@
 \def\emo@emoji@label{🏷️}
 \def\emo@emoji@eye{👁️}
 \def\emo@emoji@busts{👥}
+\def\emo@emoji@collision{💥}
 \expandafter\def\csname emo@emoji@currency-exchange\endcsname{💱}
 \expandafter\def\csname emo@emoji@floppy-disk\endcsname{💾}
 \expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
