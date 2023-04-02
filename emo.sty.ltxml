@@ -1,4 +1,4 @@
-## emo's LaTeXML bindings.
+## emo's LaTeXML binding.
 ## (C) 2023 by Robert Grimm.
 ## Released under LPPL v1.3c or later.
 use strict;
