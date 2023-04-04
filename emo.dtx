@@ -785,11 +785,11 @@ Released under LPPL v1.3c or later
 % burden on package authors. Yet, right after announcing emo, the question of
 % LaTeXML support came up. LaTeXML includes the |latexml.sty| package, which
 % defines |\iflatexml|. I would have used that command to make the three-line
-% change to |emo.sty| necessary for LaTeX support, except |latexml.sty| contains
-% lots of other stuff that isn't needed. Always loading that only to detect
-% LaTeXML seems like a bad idea. Since reimplementing |\iflatexml| would require
-% a binding anyways, I just wrote a minimal binding. As I said, LaTeXML's
-% approach is broken.
+% change to |emo.sty| necessary to support LaTeXML, except |latexml.sty|
+% contains lots of other stuff that isn't needed. Always loading lots of macros
+% only to detect LaTeXML slows down compilation and wastes memory. Since
+% reimplementing |\iflatexml| would require a binding anyways, I just wrote a
+% minimal binding. As I said, LaTeXML's approach is broken.
 %
 % With that out of the way, let's get started:
 %    \begin{macrocode}
