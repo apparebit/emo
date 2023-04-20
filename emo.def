@@ -1,9 +1,11 @@
-\ProvidesFile{emo.def}[2023-04-01]
+\ProvidesFile{emo.def}[2023-04-19]
 \expandafter\def\csname emo@emoji@keycap-one\endcsname{1️⃣}
 \def\emo@emoji@biohazard{☣️}
 \expandafter\def\csname emo@emoji@balance-scale\endcsname{⚖️}
 \expandafter\def\csname emo@emoji@check-mark\endcsname{✔️}
+\def\emo@emoji@plus{➕}
 \def\emo@emoji@eu{🇪🇺}
+\expandafter\def\csname emo@emoji@japanese-bargain-button\endcsname{🉐}
 \def\emo@emoji@foggy{🌁}
 \expandafter\def\csname emo@emoji@globe-africa-europe\endcsname{🌍}
 \expandafter\def\csname emo@emoji@classical-building\endcsname{🏛️}
@@ -16,6 +18,7 @@
 \def\emo@emoji@collision{💥}
 \expandafter\def\csname emo@emoji@currency-exchange\endcsname{💱}
 \expandafter\def\csname emo@emoji@floppy-disk\endcsname{💾}
+\expandafter\def\csname emo@emoji@chart-increasing\endcsname{📈}
 \expandafter\def\csname emo@emoji@triangular-ruler\endcsname{📐}
 \def\emo@emoji@pager{📟}
 \expandafter\def\csname emo@emoji@loupe-left\endcsname{🔍}
@@ -25,6 +28,7 @@
 \expandafter\def\csname emo@emoji@stop-sign\endcsname{🛑}
 \def\emo@emoji@robot{🤖}
 \def\emo@emoji@handshake{🤝}
+\expandafter\def\csname emo@emoji@person-facepalming\endcsname{🤦}
 \expandafter\def\csname emo@emoji@exploding-head\endcsname{🤯}
 \def\emo@emoji@parrot{🦜}
 \def\emo@emoji@judge{🧑‍⚖️}
