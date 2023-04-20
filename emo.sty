@@ -13,27 +13,38 @@
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo}
-    [2023/04/01 v0.2 emo•ji for all (LaTeX engines)]
+    [2023/04/21 v0.3 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
 \DeclareOption{index}{\emo@indexingtrue}
 \ProcessOptions\relax
 \RequirePackage[utf8]{inputenc}
-\newif\ifemo@usefont\emo@usefontfalse
+\def\emo@use@unicode{backend:unicode}
+\def\emo@use@font{backend:font+unicode}
+\def\emo@use@pdf{backend:pdf}
 \RequirePackage{iftex}
-\ifluatex\emo@usefonttrue\fi
-\ifemo@usefont
-\RequirePackage{fontspec}
+\ifdefined\HCode
+    \let\emo@backend=\emo@use@unicode
 \else
-\RequirePackage{graphicx}
+\ifluatex
+    \let\emo@backend=\emo@use@font
+\else
+    \let\emo@backend=\emo@use@pdf
+\fi
+\fi
+\ifx\emo@backend\emo@use@font
+    \RequirePackage{fontspec}
+\fi
+\ifx\emo@backend\emo@use@pdf
+    \RequirePackage{graphicx}
 \fi
 \RequirePackage{xcolor}
 \ifemo@extra
-\RequirePackage{xspace}
+    \RequirePackage{xspace}
 \fi
 \ifemo@indexing
-\RequirePackage{index}
+    \RequirePackage{index}
 \fi
 \input{emo.def}
 \definecolor{emo@error@fg}{rgb}{1,1,1}
@@ -52,54 +63,45 @@
     \fi%
 }
 \ifemo@indexing
-\newindex{emo}{edx}{end}{Emoji Index}
-\def\emo@index#1{\index[emo]{#1}}
+    \newindex{emo}{edx}{end}{Emoji Index}
+    \def\emo@index#1{\index[emo]{#1}}
 \else
-\def\emo@index#1{}
+    \def\emo@index#1{}
 \fi
-\ifemo@usefont
-\newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
-\newcommand\emo[1]{%
-    \emo@ifdef{#1}{%
-        \emo@index{#1}%
-        {\emo@font\csname emo@emoji@#1\endcsname}%
-    }%
-}
+\ifx\emo@backend\emo@use@unicode
+    \def\emo@content#1{\begingroup\csname emo@emoji@#1\endcsname\endgroup}
 \else
-\newcommand\emo[1]{%
-    \emo@ifdef{#1}{%
-        \emo@index{#1}%
+\ifx\emo@backend\emo@use@font
+    \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
+    \def\emo@content#1{\begingroup\emo@font\csname emo@emoji@#1\endcsname\endgroup}
+\else
+    \def\emo@content#1{%
         \raisebox{-0.2ex}{%
-            \includegraphics[height=1em]{emo-graphics/emo-#1}}%
+            \includegraphics[height=1em]{emo-graphics/emo-#1}}
+    }
+\fi
+\fi
+\newcommand\emo[1]{%
+    \emo@ifdef{#1}{%
+        \emo@index{#1}%
+        \emo@content{#1}%
     }%
 }
-\fi
 \ifemo@extra
-\ifemo@usefont
-\newfontface\emo@chinese{emo-lingchi.ttf}
-\newfontface\emo@hebrew{LinLibertine_R.otf}
-\newcommand\lingchi{%
-    \emo@index{lingchi}%
-    \begingroup\emo@chinese \char"51CC\char"9072\endgroup%
-    \xspace}
-\newcommand\YHWH{%
-    \emo@index{YHWH}%
-    \begingroup%
-        \textdir TRT%
-        \emo@hebrew \char"5D9\char"5D4\char"5D5\char"5D4%
-    \endgroup%
-    \xspace}
+\ifx\emo@backend\emo@use@font
+    \newfontface\emo@chinese{emo-lingchi.ttf}
+    \newfontface\emo@hebrew{LinLibertine_R.otf}
+    \newcommand\lingchi{%
+        \emo@index{lingchi}%
+        \begingroup\emo@chinese\emo@emoji@lingchi\endgroup%
+        \xspace}
+    \newcommand\YHWH{%
+        \emo@index{YHWH}%
+        \begingroup\emo@hebrew\emo@emoji@YHWH\endgroup%
+        \xspace}
 \else
-\newcommand\lingchi{%
-    \emo@index{lingchi}%
-    \raisebox{-0.2ex}{%
-        \includegraphics[height=1em]{emo-graphics/emo-lingchi}}%
-    \xspace}
-\newcommand\YHWH{%
-    \emo@index{YHWH}%
-    \raisebox{-0.2ex}{%
-        \includegraphics[height=1em]{emo-graphics/emo-YHWH}}%
-    \xspace}
+    \newcommand\lingchi{\emo{lingchi}\xspace}
+    \newcommand\YHWH{\emo{YHWH}\xspace}
 \fi
 \fi
 \endinput

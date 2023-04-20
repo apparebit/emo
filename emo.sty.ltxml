@@ -6,7 +6,7 @@ use warnings;
 use LaTeXML::Package;
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/03/21 v0.2a1 emo•ji for all (LaTeX engines)]
+    [2023/04/21 v0.3 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 EOTeX
 DeclareOption('extra', '\emo@extratrue');

@@ -9,8 +9,10 @@ provide only minimal support for non-Latin scripts (cough,
 [ACM](https://www.acm.org), cough).
 
 Emo's source repository is <https://github.com/apparebit/emo>. It also is
-available [through CTAN](https://ctan.org/pkg/emo). Emo supports conversion
-to HTML [with LaTeXML](https://github.com/brucemiller/LaTeXML).
+available [through CTAN](https://ctan.org/pkg/emo). Emo supports conversion to
+HTML with [LaTeXML](https://github.com/brucemiller/LaTeXML) or
+[TeX4ht](https://tug.org/tex4ht/). When using the latter tool, be sure to use
+|make4ht -l| as invocation.
 
 ## Package Options
 
@@ -44,13 +46,15 @@ somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 By default, emo supports only a few emoji:
 
-1️⃣ ☣️ ⚖️ ✔️ 🇪🇺 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💥 💱 💾 📐 📟 🔍 🕵️ 🗑️ 😡 🛑 🤖 🤝 🤯 🦜 🧑‍⚖️ 🧻 🧾
+1️⃣ ☣️ ⚖️ ✔️ ➕ 🇪🇺 🉐 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💥 💱 💾 📈 📐 📟 🔍
+🕵️ 🗑️ 😡 🛑 🤖 🤝 🤦 🤯 🦜 🧑‍⚖️ 🧻 🧾
 
-Their names are keycap-one, biohazard, balance-scale, check-mark, eu, foggy,
-globe-africa-europe, classical-building, desert-island, stadium, rainbow-flag,
-label, eye, busts, collision, currency-exchange, floppy-disk, triangular-ruler,
-pager, loupe-left, detective, wastebasket, enraged-face, stop-sign, robot,
-handshake, exploding-head, parrot, judge, roll-of-paper, and receipt.
+Their names are keycap-one, biohazard, balance-scale, check-mark, plus, eu,
+japanese-bargain-button, foggy, globe-africa-europe, classical-building,
+desert-island, stadium, rainbow-flag, label, eye, busts, collision,
+currency-exchange, floppy-disk, chart-increasing, triangular-ruler, pager,
+loupe-left, detective, wastebasket, enraged-face, stop-sign, robot, handshake,
+person-facepalming, exploding-head, parrot, judge, roll-of-paper, and receipt.
 
 The [package's documentation](emo.pdf) explains the underlying naming scheme and
 also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)

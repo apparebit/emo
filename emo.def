@@ -34,3 +34,8 @@
 \def\emo@emoji@judge{🧑‍⚖️}
 \expandafter\def\csname emo@emoji@roll-of-paper\endcsname{🧻}
 \def\emo@emoji@receipt{🧾}
+
+\ifemo@extra
+\def\emo@emoji@lingchi{凌遲}
+\def\emo@emoji@YHWH{\begingroup\textdir TRT יהוה\endgroup}
+\fi
