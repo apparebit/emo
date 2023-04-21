@@ -1029,15 +1029,16 @@ def show_names(registry: Registry, options: Any) -> bool:
 SPECIAL_FILES = ('emo-lingchi.pdf', 'emo-YHWH.pdf')
 
 def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
+    specials = list(SPECIAL_FILES)
     inventory: List[Emoji] = []
 
     if options.graphics.exists() and options.graphics.is_dir():
         for entry in options.graphics.iterdir():
-            if (
-                not entry.is_file()
-                or not entry.match('emo-*.pdf')
-                or entry.name in SPECIAL_FILES
-            ):
+            if not entry.is_file() or not entry.match('emo-*.pdf'):
+                continue
+
+            if entry.name in SPECIAL_FILES:
+                specials.remove(entry.name)
                 continue
 
             emoji = registry.lookup(entry.stem[4:])
@@ -1045,6 +1046,14 @@ def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
                 inventory.append(emoji)
             elif options.verbose:
                 logger.warning(f'"{entry.name}" does not depict an emoji')
+
+    if len(specials) == 1:
+        raise FileNotFoundError(f'PDF graphic "emo-graphics/{specials[0]}" is missing!')
+    elif len(specials) == 2:
+        raise FileNotFoundError(
+            f'PDF graphics "{specials[0]}" and "{specials[1]}" '
+            'in "emo-graphics" are missing!'
+        )
 
     return inventory
 
