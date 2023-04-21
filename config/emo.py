@@ -1065,6 +1065,12 @@ def write_emoji_table(
             for emoji in all_emoji:
                 file.write(emoji.latex_table_entry)
                 file.write('\n')
+            file.write("""
+\\ifemo@extra
+\\def\\emo@emoji@lingchi{凌遲}
+\\def\\emo@emoji@YHWH{\\begingroup\\textdir TRT יהוה\\endgroup}
+\\fi
+""")
         tmp_table.replace(options.latex_table)
 
     return all_emoji
