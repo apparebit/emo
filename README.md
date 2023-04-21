@@ -11,8 +11,8 @@ provide only minimal support for non-Latin scripts (cough,
 Emo's source repository is <https://github.com/apparebit/emo>. It also is
 available [through CTAN](https://ctan.org/pkg/emo). Emo supports conversion to
 HTML with [LaTeXML](https://github.com/brucemiller/LaTeXML) or
-[TeX4ht](https://tug.org/tex4ht/). When using the latter tool, be sure to use
-|make4ht -l| as invocation.
+[TeX4ht](https://tug.org/tex4ht/). When using the latter tool, please be sure to
+use |make4ht -l| as invocation.
 
 ## Package Options
 
