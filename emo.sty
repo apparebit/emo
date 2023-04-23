@@ -73,7 +73,9 @@
 \else
 \ifx\emo@backend\emo@use@font
     \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
-    \def\emo@content#1{\begingroup\emo@font\csname emo@emoji@#1\endcsname\endgroup}
+    \def\emo@content#1{%
+        \begingroup\emo@font\csname emo@emoji@#1\endcsname\endgroup%
+    }
 \else
     \def\emo@content#1{%
         \raisebox{-0.2ex}{%
@@ -82,10 +84,7 @@
 \fi
 \fi
 \newcommand\emo[1]{%
-    \emo@ifdef{#1}{%
-        \emo@index{#1}%
-        \emo@content{#1}%
-    }%
+    \emo@ifdef{#1}{\emo@index{#1}\emo@content{#1}}%
 }
 \ifemo@extra
 \ifx\emo@backend\emo@use@font

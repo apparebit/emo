@@ -199,11 +199,10 @@ Released under LPPL v1.3c or later
 % ======================================================================================
 % \fi
 %
-% \changes{0.1}{}{Initial release}
-% \changes{0.2}{}{Prefix PDF and font files with ``emo-''}
-% \changes{0.2}{}{Support pdftex for extracting emo.dtx}
-% \changes{0.3}{}{Refactor implementation to simplify public macros}
-% \changes{0.3}{}{Support conversion to HTML with TeX4ht}
+% \changes{0.1}{}{Make initial release}
+% \changes{0.2}{}{Prefix font and graphic files with ``{\tt emo-}''}
+% \changes{0.2}{}{Support {\tt pdftex} for extracting {\tt emo.dtx}}
+% \changes{0.3}{}{Support TeX4ht for conversion to HTML}
 %
 % \GetFileInfo{\jobname.dtx}
 %
@@ -593,6 +592,7 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\emo@use@font}
 % \begin{macro}{\emo@use@pdf}
 % \begin{macro}{\emo@backend}
+% \changes{0.3}{}{Make backend support scalable}
 % Emo currently supports three different backends for actually rendering emoji,
 % namely the backend named |\emo@use@unicode| emits Unicode codepoints in a
 % group, the one named |\emo@use@font| emits font selection before those same
@@ -601,7 +601,6 @@ Released under LPPL v1.3c or later
 % currently active backend, determined by interrogating the runtime environment.
 % Alas, we still need to implement the three backends; but |\emo@content| is
 % defined closer to the end of the package implementation.
-% \changes{0.3}{}{Generalize backend selection}
 %    \begin{macrocode}
 \def\emo@use@unicode{backend:unicode}
 \def\emo@use@font{backend:font+unicode}
@@ -659,7 +658,9 @@ Released under LPPL v1.3c or later
 % ^^A ----------------------------------------------------------------------------------
 % \subsection{The Emoji Table}
 %
-% \begin{macro}{\emo@emoji@<name>}
+% \begin{macro}{\emo@emoji@name}
+% \changes{0.3}{}{Include {\tt\textbackslash lingchi} and {\tt\textbackslash YWHW}
+% as necessary}
 % For each emoji with a PDF graphic in the |emo-graphics| directory and, if
 % enabled, the two extra macros, the corresponding
 % |\emo@emoji@|\meta{emoji-name} macro expands to its Unicode sequence. With
@@ -740,7 +741,9 @@ Released under LPPL v1.3c or later
 \else
 \ifx\emo@backend\emo@use@font
     \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
-    \def\emo@content#1{\begingroup\emo@font\csname emo@emoji@#1\endcsname\endgroup}
+    \def\emo@content#1{%
+        \begingroup\emo@font\csname emo@emoji@#1\endcsname\endgroup%
+    }
 \else
     \def\emo@content#1{%
         \raisebox{-0.2ex}{%
@@ -756,31 +759,27 @@ Released under LPPL v1.3c or later
 % \subsection{User Macros}
 %
 % \begin{macro}{\emo}
-% Thanks to the just introduced internal macros, the main |\emo| macro is really
-% simple: If the emoji name is defined, possibly emit an index entry for that
-% emoji and, critically, render the emoji content.
+% Thanks to carefully defined internal macros, the implementation of the main
+% |\emo| macro is almost trivial. If the emoji name passes muster, emit an index
+% entry and render the emoji content:
 %    \begin{macrocode}
 \newcommand\emo[1]{%
-    \emo@ifdef{#1}{%
-        \emo@index{#1}%
-        \emo@content{#1}%
-    }%
+    \emo@ifdef{#1}{\emo@index{#1}\emo@content{#1}}%
 }
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\lingchi}
+% \changes{0.3}{}{Build on {\tt\textbackslash emo} by default}
 % \begin{macro}{\YHWH}
-% With such a simple yet generally useful definition for |\emo|, the default
-% implementations for |\lingchi| and |\YHWH| can just delegate to |\emo|
-% followed by |\xspace|. That's possible because, just like emoji, both macros
-% render either as Unicode characters or PDF graphics. Alas, that cannot work
-% for the font backend because |\emo| uses Noto Color Emoji whereas |\lingchi|
-% uses Traditional Chinese and |\YHWH| Hebrew. Since these two macros are the
-% two only font exceptions, we simply define alternate versions for the font
-% backend that use the correct fonts. Of course, all this happens only when the
-% \textsf{extra} option is enabled.
-% \changes{0.3}{}{Implement in terms of |\emo|}
+% \changes{0.3}{}{Build on {\tt\textbackslash emo} by default}
+% By defining the Unicode codepoints for |\lingchi| and |\YHWH| in the emoji
+% table, the macros can lean on |\emo| instead of bringing their own logic.
+% Unfortunately, that doesn't always work because |\emo| uses the Noto color
+% emoji font whereas |\lingchi| uses Traditional Chinese and |\YHWH| Hebrew. So
+% when using the font selection backend, we use different, slightly more
+% elaborate versions that correctly select fonts. Of course, all this happens
+% only when the \textsf{extra} option is enabled:
 %    \begin{macrocode}
 \ifemo@extra
 \ifx\emo@backend\emo@use@font
@@ -812,7 +811,7 @@ Released under LPPL v1.3c or later
 %
 % ^^A ==================================================================================
 % \section{LaTeXML Binding}
-% \changes{0.2}{}{Add LaTeXML binding}
+% \changes{0.2}{}{Add LaTeXML binding for conversion to HTML}
 %
 % To support conversion from LaTeX to HTML, emo includes a so-called binding for
 % \href{https://github.com/brucemiller/LaTeXML}{LaTeXML}. It effectively is a
@@ -871,12 +870,12 @@ DeclareOption('index', '');
 ProcessOptions();
 %    \end{macrocode}
 %
-% \begin{macro}{\emo@emoji@<name>}
+% \begin{macro}{\emo@emoji@name}
 % \begin{macro}{\emo}
-% Just like the actual package implementation, the binding reads the emoji table
-% from |emo.def|. Similar to the actual implementation of the |\emo| macro when
-% running under LuaLaTeX, the binding expands the named entry from the emoji
-% table, producing the emoji's Unicode codepoints.
+% Just like the actual package implementation, the LaTeXML binding reads the
+% emoji table from |emo.def|. Similar to the actual implementation of the |\emo|
+% macro when running under LuaLaTeX, the binding expands the named entry from
+% the emoji table, producing the emoji's Unicode codepoints.
 %    \begin{macrocode}
 InputDefinitions('emo', type => 'def', noltxml => 1);
 DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
