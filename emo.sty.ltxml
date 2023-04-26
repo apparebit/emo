@@ -6,11 +6,12 @@ use warnings;
 use LaTeXML::Package;
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/04/21 v0.3 emo•ji for all (LaTeX engines)]
+    [2023/04/26 v0.4 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 EOTeX
 DeclareOption('extra', '\emo@extratrue');
 DeclareOption('index', '');
+DeclareOption('debug', '');
 ProcessOptions();
 InputDefinitions('emo', type => 'def', noltxml => 1);
 DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');

@@ -1,0 +1,104 @@
+%%
+%% This is file `canary.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% emo.dtx  (with options: `canary')
+%% 
+%% emo•ji for all (LaTeX engines)
+%% (C) Copyright 2023 by Robert Grimm
+%% Released under LPPL v1.3c or later
+%% <https://github.com/apparebit/emo>
+%% 
+\documentclass[border=10pt]{standalone}
+\usepackage[extra]{emo}
+\usepackage{iftex}
+\usepackage{xcolor}
+\usepackage{varwidth}
+
+\iftutex
+\usepackage{fontspec}
+\usepackage{libertinus}
+\setmonofont{inconsolata}
+\else
+\usepackage{libertinus}
+\usepackage{inconsolata}
+\fi
+\ifxetex
+\def\enginename{XeTeX}
+\else
+\ifluatex
+\def\enginename{LuaTeX}
+\else
+\ifpdftex
+\def\enginename{pdfTeX}
+\else
+\def\enginename{unknown engine}
+\fi
+\fi
+\fi
+\definecolor{wordboxframe}{HTML}{636366}
+\definecolor{lineboxframe}{HTML}{48484A}
+\definecolor{lineboxbg}{HTML}{E5E5EA}
+
+\setlength{\fboxrule}{0.5pt}
+\setlength{\fboxsep}{0pt}
+
+\newcommand\nobx[1]{#1}
+\newcommand\wbx[1]{\fcolorbox{wordboxframe}{white}{#1}}
+\newcommand\lbx[1]{\fcolorbox{lineboxframe}{lineboxbg}{#1}}
+\makeatletter
+\def\@boundedtext#1{%
+    \lbx{%
+        #1{It's} #1{\lingchi}:
+        #1{Please}, #1{\YHWH}, #1{have} #1{mercy}
+        #1{\emo{pleading-face}}!%
+    }%
+}
+\newcommand*\boundedtext{%
+    \@ifstar{\@boundedtext{\wbx}}{\@boundedtext{\nobx}}%
+}
+\makeatother
+\newsavebox{\actual}
+\newsavebox{\expected}
+
+\newcommand\checkwidth[5]{%
+    \sbox\actual{#2.}%
+    \ifluatex%
+        \sbox\expected{%
+            \begingroup\csname#3\endcsname #4\endgroup.}%
+    \else%
+        \sbox\expected{%
+            \raisebox{-0.2ex}{%
+                \includegraphics[height=1em]{emo-graphics/emo-#5}}.}%
+    \fi%
+    \def\macroname{\texttt{\char`\\#1}}%
+    \ifdim\wd\actual=\wd\expected%
+        \mbox{\macroname{} \emo{check-mark-button}}%
+    \else%
+        \edef\actualwidth{\the\wd\actual}%
+        \edef\expectedwidth{\the\wd\expected}%
+        \mbox{\macroname{} \emo{cross-mark} \actualwidth{} \expectedwidth}%
+    \fi%
+}
+\begin{document}
+\begin{varwidth}{6in}
+\Huge
+
+\noindent\enginename:
+\Large Width of
+\checkwidth{emo}{\emo{robot}}{emo@font}{\char"1F916}{robot},
+\checkwidth{lingchi}{\lingchi}{emo@chinese}{\char"51CC\char"9072}{lingchi},
+\checkwidth{YHWH}{\YHWH}{emo@hebrew}{\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}
+\vspace{1ex}\Huge
+
+\boundedtext*{}
+\vspace{1ex}\newline
+\boundedtext{}
+
+\end{varwidth}
+\end{document}
+\endinput
+%%
+%% End of file `canary.tex'.

@@ -307,7 +307,10 @@ noto-emoji
 noto-emoji.zip
 LaTeXML.css
 ltx-article.css
-demo.css
-demo.tmp
+canary.css
+canary.tmp
+luatex-canary.*
+pdftex-canary.*
+xetex-canary.*
 emo
 emo-*.*.zip

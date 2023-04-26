@@ -28,7 +28,7 @@ each use of an emoji into an emo index or `.edx` file.
 To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
 that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
 but also generates the package documentation. The embedded files are `build.sh`,
-`emo.ins`, `emo.sty`, `emo.sty.ltxml`, and `README.md`.
+`emo.ins`, `emo.sty`, `emo.sty.ltxml`, `canary.tex`, and `README.md`.
 
 To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
 shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
@@ -44,17 +44,19 @@ somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 ## Supported Emoji
 
-By default, emo supports only a few emoji:
+By default, emo supports only a few emoji, ordered by Unicode codepoints:
 
-1️⃣ ☣️ ⚖️ ✔️ ➕ 🇪🇺 🉐 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💥 💱 💾 📈 📐 📟 🔍
-🕵️ 🗑️ 😡 🛑 🤖 🤝 🤦 🤯 🦜 🧑‍⚖️ 🧻 🧾
+1️⃣ ☣️ ⚖️ ✅ ✔️ ❌ ➕ 🇪🇺 🉐 🌁 🌍 🎉 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 🐤 👁️ 👥 💥 💱 💾 📈 📐 📟 🔍
+🕵️ 🗑️ 😡 🛑 🤖 🤝 🤦 🤪 🤯 🥺 🦜 🧑‍⚖️ 🧻 🧾
 
-Their names are keycap-one, biohazard, balance-scale, check-mark, plus, eu,
-japanese-bargain-button, foggy, globe-africa-europe, classical-building,
-desert-island, stadium, rainbow-flag, label, eye, busts, collision,
-currency-exchange, floppy-disk, chart-increasing, triangular-ruler, pager,
-loupe-left, detective, wastebasket, enraged-face, stop-sign, robot, handshake,
-person-facepalming, exploding-head, parrot, judge, roll-of-paper, and receipt.
+Their names are keycap-one, biohazard, balance-scale, check-mark-button,
+check-mark, cross-mark, plus, eu, japanese-bargain-button, foggy,
+globe-africa-europe, party-popper, classical-building, desert-island, stadium,
+rainbow-flag, label, baby-chick, eye, busts, collision, currency-exchange,
+floppy-disk, chart-increasing, triangular-ruler, pager, loupe-left, detective,
+wastebasket, enraged-face, stop-sign, robot, handshake, person-facepalming,
+zany-face, exploding-head, pleading-face, parrot, judge, roll-of-paper, and
+receipt.
 
 The [package's documentation](emo.pdf) explains the underlying naming scheme and
 also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)

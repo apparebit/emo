@@ -45,7 +45,7 @@ each use of an emoji into an emo index or `.edx` file.
 To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
 that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
 but also generates the package documentation. The embedded files are `build.sh`,
-`emo.ins`, `emo.sty`, `emo.sty.ltxml`, and `README.md`.
+`emo.ins`, `emo.sty`, `emo.sty.ltxml`, `canary.tex`, and `README.md`.
 
 To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
 shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
@@ -62,17 +62,19 @@ somewhere where LaTeX can find them. In a pinch, your project directory will do.
 
 ## Supported Emoji
 
-By default, emo supports only a few emoji:
+By default, emo supports only a few emoji, ordered by Unicode codepoints:
 
-1️⃣ ☣️ ⚖️ ✔️ ➕ 🇪🇺 🉐 🌁 🌍 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 👁️ 👥 💥 💱 💾 📈 📐 📟 🔍
-🕵️ 🗑️ 😡 🛑 🤖 🤝 🤦 🤯 🦜 🧑‍⚖️ 🧻 🧾
+1️⃣ ☣️ ⚖️ ✅ ✔️ ❌ ➕ 🇪🇺 🉐 🌁 🌍 🎉 🏛️ 🏝️ 🏟️ 🏳️‍🌈 🏷️ 🐤 👁️ 👥 💥 💱 💾 📈 📐 📟 🔍
+🕵️ 🗑️ 😡 🛑 🤖 🤝 🤦 🤪 🤯 🥺 🦜 🧑‍⚖️ 🧻 🧾
 
-Their names are keycap-one, biohazard, balance-scale, check-mark, plus, eu,
-japanese-bargain-button, foggy, globe-africa-europe, classical-building,
-desert-island, stadium, rainbow-flag, label, eye, busts, collision,
-currency-exchange, floppy-disk, chart-increasing, triangular-ruler, pager,
-loupe-left, detective, wastebasket, enraged-face, stop-sign, robot, handshake,
-person-facepalming, exploding-head, parrot, judge, roll-of-paper, and receipt.
+Their names are keycap-one, biohazard, balance-scale, check-mark-button,
+check-mark, cross-mark, plus, eu, japanese-bargain-button, foggy,
+globe-africa-europe, party-popper, classical-building, desert-island, stadium,
+rainbow-flag, label, baby-chick, eye, busts, collision, currency-exchange,
+floppy-disk, chart-increasing, triangular-ruler, pager, loupe-left, detective,
+wastebasket, enraged-face, stop-sign, robot, handshake, person-facepalming,
+zany-face, exploding-head, pleading-face, parrot, judge, roll-of-paper, and
+receipt.
 
 The [package's documentation](emo.pdf) explains the underlying naming scheme and
 also how to reconfigure which emoji are supported. The [emo.py](config/emo.py)
@@ -107,6 +109,13 @@ approved](https://opensource.org/licenses/) and non-copyleft:
 %</readme>
 % --------------------------------------------------------------------------------------
 %<*buildscript>
+# Test emo
+pdflatex -jobname=pdftex-canary canary
+xelatex -jobname=xetex-canary canary
+lualatex -jobname=luatex-canary canary
+pdfunite pdftex-canary.pdf xetex-canary.pdf luatex-canary.pdf canary.pdf
+
+# Document emo
 pdflatex emo.dtx
 makeindex -s gind.ist -o emo.ind emo.idx
 makeindex -s gglo.ist -o emo.gls emo.glo
@@ -146,6 +155,7 @@ Released under LPPL v1.3c or later
 %<*scaffold>
 \usedir{source/latex/emo}
 \generate{\file{\jobname.ins}{\from{\jobname.dtx}{install}}}
+\generate{\file{canary.tex}{\from{\jobname.dtx}{canary}}}
 \nopreamble\nopostamble
 \usedir{source/latex/emo}
 \generate{\file{build.sh}{\from{\jobname.dtx}{buildscript}}}
@@ -165,7 +175,7 @@ Released under LPPL v1.3c or later
 %<package>\NeedsTeXFormat{LaTeX2e}
 %<package>\ProvidesPackage{emo}
 %<*scaffold,package>
-    [2023/12/12 v0.4 emo•ji for all (LaTeX engines)]
+    [2023/04/26 v0.4 emo•ji for all (LaTeX engines)]
 %</scaffold,package>
 % ======================================================================================
 %<*driver>
@@ -203,6 +213,7 @@ Released under LPPL v1.3c or later
 % \changes{0.2}{}{Prefix font and graphic files with ``{\tt emo-}''}
 % \changes{0.2}{}{Support {\tt pdftex} for extracting {\tt emo.dtx}}
 % \changes{0.3}{}{Support TeX4ht for conversion to HTML}
+% \changes{0.4}{}{Automate testing across engines with {\tt canary.tex}}
 %
 % \GetFileInfo{\jobname.dtx}
 %
@@ -263,21 +274,24 @@ Released under LPPL v1.3c or later
 % \end{verbatimish}
 % Do \emph{not} use |tex|; it mangles the embedded |README.md|. |pdflatex| also
 % extracts the files and then builds the documentation. Embedded files are
-% |build.sh|, |emo.ins|, |emo.sty|, |emo.sty.ltxml|, and |README.md|. Extraction
-% will overwrite existing files with the same name without asking.
+% |build.sh|, |emo.ins|, |emo.sty|, |emo.sty.ltxml|, |canary.tex|, and
+% |README.md|. Extraction will overwrite existing files with the same name
+% without asking.
 %
 % \item Build the package documentation with change and symbol indices by
 % running:
 % \begin{verbatimish}
 %      \$ source build.sh
 % \end{verbatimish}
-% The shell script invokes |pdflatex emo.dtx| thrice and |makeindex| once each
-% for the change and symbol indices to produce |emo.pdf|.
+% The shell script processes the tests in |canary.tex| with |pdflatex|,
+% |xelatex|, and |lualatex|, combining test results into |canary.pdf|. It also
+% processes |emo.dtx| with |pdflatex| and |makeindex| to produce documentation
+% in |emo.pdf|.
 %
 % \item Get started reconfiguring supported emoji by running:
 % \begin{verbatimish}
-% \$ python config/emo.py -h
-%     \end{verbatimish}
+%     \$ python config/emo.py -h
+% \end{verbatimish}
 % For more detailed instructions, see \S\ref{sec:config} below.
 %
 % \item Put the following files somewhere LaTeX can find them. In a pinch, your
@@ -563,16 +577,22 @@ Released under LPPL v1.3c or later
 %
 % \begin{macro}{\ifemo@extra}
 % \begin{macro}{\ifemo@index}
-% Emo's \textsf{extra} and \textsf{index} options are simple flags. So we
-% declare a new conditional for each and, if |\usepackage| includes an option,
-% toggle the conditional's state.
+% \begin{macro}{\ifemo@debug}
+% \changes{0.4}{}{Add \textsf{debug} option for drawing boundary boxes}
+% Emo's \textsf{extra} and \textsf{index} options are simple flags. So is the
+% only incompletely documented \textsf{debug} option. We declare a new
+% conditional for each and, if |\usepackage| includes an option, toggle the
+% conditional's state.
 %    \begin{macrocode}
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
 \DeclareOption{index}{\emo@indexingtrue}
+\newif\ifemo@debug\emo@debugfalse
+\DeclareOption{debug}{\emo@debugtrue}
 \ProcessOptions\relax
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 % \end{macro}
 %
@@ -592,7 +612,7 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\emo@use@font}
 % \begin{macro}{\emo@use@pdf}
 % \begin{macro}{\emo@backend}
-% \changes{0.3}{}{Make backend support scalable}
+% \changes{0.3}{}{Make backend support scalable through symbolic names}
 % Emo currently supports three different backends for actually rendering emoji,
 % namely the backend named |\emo@use@unicode| emits Unicode codepoints in a
 % group, the one named |\emo@use@font| emits font selection before those same
@@ -730,6 +750,7 @@ Released under LPPL v1.3c or later
 % \end{macro}
 %
 % \begin{macro}{\emo@content}
+% \changes{0.4}{}{Remove extra space from PDF renderer}
 % Render the emoji content.  This macro interfaces with the backend and thus
 % needs to be defined as many times as there are backends: The Unicode backend
 % just expands the entry from the emoji table. The font backend does the same,
@@ -737,7 +758,9 @@ Released under LPPL v1.3c or later
 % the corresponding PDF graphic.
 %    \begin{macrocode}
 \ifx\emo@backend\emo@use@unicode
-    \def\emo@content#1{\begingroup\csname emo@emoji@#1\endcsname\endgroup}
+    \def\emo@content#1{%
+        \begingroup\csname emo@emoji@#1\endcsname\endgroup%
+    }
 \else
 \ifx\emo@backend\emo@use@font
     \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
@@ -747,9 +770,18 @@ Released under LPPL v1.3c or later
 \else
     \def\emo@content#1{%
         \raisebox{-0.2ex}{%
-            \includegraphics[height=1em]{emo-graphics/emo-#1}}
+            \includegraphics[height=1em]{emo-graphics/emo-#1}}%
     }
 \fi
+\fi
+%    \end{macrocode}
+%
+% In debug mode, emo draws a box around the content of |\emo|. That may help
+% when tracking down spurious whitespace.
+%    \begin{macrocode}
+\ifemo@debug
+    \let\emo@realcontent=\emo@content
+    \def\emo@content#1{\fbox{\emo@realcontent{#1}}}
 \fi
 %    \end{macrocode}
 % \end{macro}
@@ -764,7 +796,10 @@ Released under LPPL v1.3c or later
 % entry and render the emoji content:
 %    \begin{macrocode}
 \newcommand\emo[1]{%
-    \emo@ifdef{#1}{\emo@index{#1}\emo@content{#1}}%
+    \emo@ifdef{#1}{%
+        \emo@index{#1}%
+        \emo@content{#1}%
+    }%
 }
 %    \end{macrocode}
 % \end{macro}
@@ -773,29 +808,39 @@ Released under LPPL v1.3c or later
 % \changes{0.3}{}{Build on {\tt\textbackslash emo} by default}
 % \begin{macro}{\YHWH}
 % \changes{0.3}{}{Build on {\tt\textbackslash emo} by default}
-% By defining the Unicode codepoints for |\lingchi| and |\YHWH| in the emoji
-% table, the macros can lean on |\emo| instead of bringing their own logic.
-% Unfortunately, that doesn't always work because |\emo| uses the Noto color
-% emoji font whereas |\lingchi| uses Traditional Chinese and |\YHWH| Hebrew. So
-% when using the font selection backend, we use different, slightly more
-% elaborate versions that correctly select fonts. Of course, all this happens
-% only when the \textsf{extra} option is enabled:
+%
+% Since the emoji table in |emo.def| includes macros with the Unicode codepoints
+% for ``lingchi'' and ``YHWH,'' the implementation of |\lingchi| and |\YHWH|
+% just delegates to |\emo|.
 %    \begin{macrocode}
 \ifemo@extra
+\ifx\emo@backend\emo@use@font\else
+    \newcommand\lingchi{\emo{lingchi}\xspace}
+    \newcommand\YHWH{\emo{YHWH}\xspace}
+\fi
+%    \end{macrocode}
+%
+% Except, as hinted at by the backend test, delegating to |\emo| won't work when
+% using fonts, since |\emo| uses Noto color emoji whereas the two extra macros
+% do not. In that case, we define alternative versions that, similar to |\emo|
+% rely on their own specialized |\emo@content| macros and also wrap them when
+% the \textsf{debug} package option is enabled.
+%    \begin{macrocode}
 \ifx\emo@backend\emo@use@font
     \newfontface\emo@chinese{emo-lingchi.ttf}
     \newfontface\emo@hebrew{LinLibertine_R.otf}
-    \newcommand\lingchi{%
-        \emo@index{lingchi}%
-        \begingroup\emo@chinese\emo@emoji@lingchi\endgroup%
-        \xspace}
-    \newcommand\YHWH{%
-        \emo@index{YHWH}%
-        \begingroup\emo@hebrew\emo@emoji@YHWH\endgroup%
-        \xspace}
-\else
-    \newcommand\lingchi{\emo{lingchi}\xspace}
-    \newcommand\YHWH{\emo{YHWH}\xspace}
+    \def\emo@lingchi@content{\begingroup\emo@chinese\emo@emoji@lingchi\endgroup}
+    \def\emo@YHWH@content{\begingroup\emo@hebrew\emo@emoji@YHWH\endgroup}
+
+    \ifemo@debug
+        \let\emo@lingchi@realcontent=\emo@lingchi@content
+        \let\emo@YHWH@content=\emo@YHWH@content
+        \def\emo@lingchi@content{\fbox{\emo@lingchi@realcontent}}
+        \def\emo@YHWH@content{\fbox{\emo@YHWH@realcontent}}
+    \fi
+
+    \newcommand\lingchi{\emo@index{lingchi}\emo@lingchi@content\xspace}
+    \newcommand\YHWH{\emo@index{YHWH}\emo@YHWH@content\xspace}
 \fi
 \fi
 %    \end{macrocode}
@@ -812,6 +857,11 @@ Released under LPPL v1.3c or later
 % ^^A ==================================================================================
 % \section{LaTeXML Binding}
 % \changes{0.2}{}{Add LaTeXML binding for conversion to HTML}
+%
+% ^^A Reset line number counter
+% \makeatletter
+% \c@CodelineNo 0
+% \makeatother
 %
 % To support conversion from LaTeX to HTML, emo includes a so-called binding for
 % \href{https://github.com/brucemiller/LaTeXML}{LaTeXML}. It effectively is a
@@ -857,7 +907,7 @@ use LaTeXML::Package;
 %    \begin{macrocode}
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/12/12 v0.4 emo•ji for all (LaTeX engines)]
+    [2023/04/26 v0.4 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 EOTeX
 %    \end{macrocode}
@@ -867,6 +917,7 @@ EOTeX
 %    \begin{macrocode}
 DeclareOption('extra', '\emo@extratrue');
 DeclareOption('index', '');
+DeclareOption('debug', '');
 ProcessOptions();
 %    \end{macrocode}
 %
@@ -901,6 +952,227 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 % That's it for the binding, too.
 %    \begin{macrocode}
 %</latexml-binding>
+%    \end{macrocode}
+%
+%
+% ^^A ==================================================================================
+% \section{Emo's Test Document}
+% \changes{0.4}{}{Introduce a simple unit testing framework}
+%
+% ^^A Reset line number counter
+% \makeatletter
+% \c@CodelineNo 0
+% \makeatother
+%
+% As emo's tagline so loudly pronounces, the package is intended to enable emoji
+% across all major LaTeX engines. This document provides the basis for testing
+% that this is indeed the case. It results in a concise card, or ``canary,''
+% that (1) identifies the engine, (2) lists the macro names |\emo|, |\lingchi|,
+% and |\YHWH| adorned with \emo{check-mark-button} or \emo{cross-mark} to
+% indicate whether the macro produced output of the expected width, and (3)
+% shows the same line of text using the three macros, with visible bounding
+% boxes for line and words as well as line only.
+%
+%
+% \subsection{Test Preamble}
+%
+% As usual, we start the test document by declaring its class and requiring
+% necessary packages. Notably, |standalone| and |varwidth| help generate a PDF
+% card that is sized to the test output. |iftex| is necessary for dynamically
+% detecting the LaTeX engine, and |emo| is about to be tested. The rest are
+% mostly indulgences for appearance. We also wrap the entire test document in an
+% |\iffalse| |\fi| block so that it doesn't interfere with documentation
+% generation.
+%    \begin{macrocode}
+%<*scaffold>
+\iffalse
+%</scaffold>
+%<*canary>
+\documentclass[border=10pt]{standalone}
+\usepackage[extra]{emo}
+\usepackage{iftex}
+\usepackage{xcolor}
+\usepackage{varwidth}
+
+\iftutex
+\usepackage{fontspec}
+\usepackage{libertinus}
+\setmonofont{inconsolata}
+\else
+\usepackage{libertinus}
+\usepackage{inconsolata}
+\fi
+%    \end{macrocode}
+%
+% \begin{macro}{\enginename}
+% I couldn't find an existing macro that provides the engine name. Hence, we
+% gotta round up the usual suspects:
+%    \begin{macrocode}
+\ifxetex
+\def\enginename{XeTeX}
+\else
+\ifluatex
+\def\enginename{LuaTeX}
+\else
+\ifpdftex
+\def\enginename{pdfTeX}
+\else
+\def\enginename{unknown engine}
+\fi
+\fi
+\fi
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\nobx}
+% \begin{macro}{\wbx}
+% \begin{macro}{\lbx}
+% To display text with bounding boxes, we define some (very neutral) colors and
+% boxes. In particular, |\nobx| and |\wbx|, respectively, do not or do draw a
+% box around a word or emoji. |\lbx| draws a box around the line of text.
+%    \begin{macrocode}
+\definecolor{wordboxframe}{HTML}{636366}
+\definecolor{lineboxframe}{HTML}{48484A}
+\definecolor{lineboxbg}{HTML}{E5E5EA}
+
+\setlength{\fboxrule}{0.5pt}
+\setlength{\fboxsep}{0pt}
+
+\newcommand\nobx[1]{#1}
+\newcommand\wbx[1]{\fcolorbox{wordboxframe}{white}{#1}}
+\newcommand\lbx[1]{\fcolorbox{lineboxframe}{lineboxbg}{#1}}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\boundedtext}
+% Drawing bounding boxes around ``building blocks,'' i.e., emoji and words
+% appearing in a line of text, can help identify buggy font metrics, spurious
+% spaces, and so on. But it also is an awfully cluttered presentation. Hence we
+% display the same line a second time, this time without the word-level boxes.
+% That seems like a good use case for LaTeX's star-form of a command.
+%    \begin{macrocode}
+\makeatletter
+\def\@boundedtext#1{%
+    \lbx{%
+        #1{It's} #1{\lingchi}:
+        #1{Please}, #1{\YHWH}, #1{have} #1{mercy}
+        #1{\emo{pleading-face}}!%
+    }%
+}
+\newcommand*\boundedtext{%
+    \@ifstar{\@boundedtext{\wbx}}{\@boundedtext{\nobx}}%
+}
+\makeatother
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\checkwidth}
+% Validating the output of emo's macros turned out to be a bit trickier than I
+% had expected. The obvious approach, expanding macros to primitives and then
+% comparing to expected results, simply doesn't work---even though LaTeX does
+% have builtin support for eager expansion via, for example, |\expandafter| and
+% |\edef|. The reason is that unlike C, where the preprocessor runs strictly
+% before the rest of the compiler, macro expansion in TeX and LaTeX is
+% ubiquitous, delayed, repeated, interleaved, and so on.
+%
+% ^^A https://tex.stackexchange.com/questions/67192/using-qstest-to-implement-unit-tests
+%
+% Instead, we need to take a sneakier approach: Generate a box with the macro
+% application and another box with the expected result and then compare the
+% widths of the two boxes. While that cannot detect all bugs, it can detect one
+% critical class of bugs: spurious whitespace! Alas, there is an additional
+% complication: |\lingchi| and |\YHWH| use |xspace| to avoid ugly trailing
+% backslash characters. But that also makes their results context-sensitive,
+% which might become a problem in a unit test without context. It is for just
+% that reason that the text arguments to |\sbox\actual| or |\sbox\expected|
+% below end with a period.
+%
+% Even though |\checkwidth| only tests three macros and two of them take no
+% arguments, it still requires five arguments to cover all variability:
+% \begin{enumerate}
+% \item name of macro being tested;
+% \item macro invocation being tested;
+% \item name of font variable used in LuaLaTeX's output;
+% \item Unicode code sequence in LuaLaTeX's output;
+% \item file name for fallback PDF graphic without ``|emo-|'' prefix.
+% \end{enumerate}
+% The third and fourth arguments are separate because the font variable only
+% exists when running under LuaLaTeX.
+%    \begin{macrocode}
+\newsavebox{\actual}
+\newsavebox{\expected}
+
+\newcommand\checkwidth[5]{%
+    \sbox\actual{#2.}%
+    \ifluatex%
+        \sbox\expected{%
+            \begingroup\csname#3\endcsname #4\endgroup.}%
+    \else%
+        \sbox\expected{%
+            \raisebox{-0.2ex}{%
+                \includegraphics[height=1em]{emo-graphics/emo-#5}}.}%
+    \fi%
+    \def\macroname{\texttt{\char`\\#1}}%
+    \ifdim\wd\actual=\wd\expected%
+        \mbox{\macroname{} \emo{check-mark-button}}%
+    \else%
+        \edef\actualwidth{\the\wd\actual}%
+        \edef\expectedwidth{\the\wd\expected}%
+        \mbox{\macroname{} \emo{cross-mark} \actualwidth{} \expectedwidth}%
+    \fi%
+}
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{Test Body}
+%
+% All test macros have been defined and we can finally get to actually testing
+% emo. We put all output in a |varwidth| environment to ensure that the PDF is
+% content-sized. Since the output includes text with bounding boxes, we use a
+% really large font size.
+%    \begin{macrocode}
+\begin{document}
+\begin{varwidth}{6in}
+\Huge
+
+%    \end{macrocode}
+%
+% At the top of the card are the engine name and the width tests, one for each
+% macro.
+%    \begin{macrocode}
+\noindent\enginename:
+\Large Width of
+\checkwidth{emo}{\emo{robot}}{emo@font}{\char"1F916}{robot},
+\checkwidth{lingchi}{\lingchi}{emo@chinese}{\char"51CC\char"9072}{lingchi},
+\checkwidth{YHWH}{\YHWH}{emo@hebrew}{\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}
+\vspace{1ex}\Huge
+
+%    \end{macrocode}
+%
+% At the bottom of the card are the two lines of text with bounding boxes,
+% \emph{with} word-level boxes and then without.
+%    \begin{macrocode}
+\boundedtext*{}
+\vspace{1ex}\newline
+\boundedtext{}
+
+%    \end{macrocode}
+%
+% That's it as far as tests are concerned. Clearly, writing the test macros was
+% more involved than using them. That effort also is the reason I decided to
+% include the annotated test document in |emo.dtx|. All that's left at this
+% point is wrapping up the test document, wrapping up the enclosing conditional,
+% and wrapping up emo's documentation. It's a wrap \emo{zany-face}
+%    \begin{macrocode}
+\end{varwidth}
+\end{document}
+%</canary>
+%<*scaffold>
+\fi
+%</scaffold>
 %    \end{macrocode}
 %
 %

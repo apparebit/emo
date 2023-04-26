@@ -13,11 +13,13 @@
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo}
-    [2023/04/21 v0.3 emo•ji for all (LaTeX engines)]
+    [2023/04/26 v0.4 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 \DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
 \DeclareOption{index}{\emo@indexingtrue}
+\newif\ifemo@debug\emo@debugfalse
+\DeclareOption{debug}{\emo@debugtrue}
 \ProcessOptions\relax
 \RequirePackage[utf8]{inputenc}
 \def\emo@use@unicode{backend:unicode}
@@ -69,7 +71,9 @@
     \def\emo@index#1{}
 \fi
 \ifx\emo@backend\emo@use@unicode
-    \def\emo@content#1{\begingroup\csname emo@emoji@#1\endcsname\endgroup}
+    \def\emo@content#1{%
+        \begingroup\csname emo@emoji@#1\endcsname\endgroup%
+    }
 \else
 \ifx\emo@backend\emo@use@font
     \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
@@ -79,28 +83,40 @@
 \else
     \def\emo@content#1{%
         \raisebox{-0.2ex}{%
-            \includegraphics[height=1em]{emo-graphics/emo-#1}}
+            \includegraphics[height=1em]{emo-graphics/emo-#1}}%
     }
 \fi
 \fi
+\ifemo@debug
+    \let\emo@realcontent=\emo@content
+    \def\emo@content#1{\fbox{\emo@realcontent{#1}}}
+\fi
 \newcommand\emo[1]{%
-    \emo@ifdef{#1}{\emo@index{#1}\emo@content{#1}}%
+    \emo@ifdef{#1}{%
+        \emo@index{#1}%
+        \emo@content{#1}%
+    }%
 }
 \ifemo@extra
+\ifx\emo@backend\emo@use@font\else
+    \newcommand\lingchi{\emo{lingchi}\xspace}
+    \newcommand\YHWH{\emo{YHWH}\xspace}
+\fi
 \ifx\emo@backend\emo@use@font
     \newfontface\emo@chinese{emo-lingchi.ttf}
     \newfontface\emo@hebrew{LinLibertine_R.otf}
-    \newcommand\lingchi{%
-        \emo@index{lingchi}%
-        \begingroup\emo@chinese\emo@emoji@lingchi\endgroup%
-        \xspace}
-    \newcommand\YHWH{%
-        \emo@index{YHWH}%
-        \begingroup\emo@hebrew\emo@emoji@YHWH\endgroup%
-        \xspace}
-\else
-    \newcommand\lingchi{\emo{lingchi}\xspace}
-    \newcommand\YHWH{\emo{YHWH}\xspace}
+    \def\emo@lingchi@content{\begingroup\emo@chinese\emo@emoji@lingchi\endgroup}
+    \def\emo@YHWH@content{\begingroup\emo@hebrew\emo@emoji@YHWH\endgroup}
+
+    \ifemo@debug
+        \let\emo@lingchi@realcontent=\emo@lingchi@content
+        \let\emo@YHWH@content=\emo@YHWH@content
+        \def\emo@lingchi@content{\fbox{\emo@lingchi@realcontent}}
+        \def\emo@YHWH@content{\fbox{\emo@YHWH@realcontent}}
+    \fi
+
+    \newcommand\lingchi{\emo@index{lingchi}\emo@lingchi@content\xspace}
+    \newcommand\YHWH{\emo@index{YHWH}\emo@YHWH@content\xspace}
 \fi
 \fi
 \endinput
