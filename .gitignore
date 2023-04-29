@@ -138,6 +138,7 @@ acs-*.bib
 *.lg
 *.trc
 *.xref
+*.tmp
 
 # hyperref
 *.brf
@@ -307,8 +308,6 @@ noto-emoji
 noto-emoji.zip
 LaTeXML.css
 ltx-article.css
-canary.css
-canary.tmp
 luatex-canary.*
 pdftex-canary.*
 xetex-canary.*
