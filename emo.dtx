@@ -45,7 +45,8 @@ each use of an emoji into an emo index or `.edx` file.
 To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
 that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
 but also generates the package documentation. The embedded files are `build.sh`,
-`emo.ins`, `emo.sty`, `emo.sty.ltxml`, `canary.tex`, and `README.md`.
+`emo.ins`, `emo.sty`, `emo.sty.ltxml`, `emo-test.cls`, `canary.tex`, `demo.tex`,
+and `README.md`.
 
 To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
 shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
@@ -115,6 +116,12 @@ xelatex -jobname=xetex-canary canary
 lualatex -jobname=luatex-canary canary
 pdfunite pdftex-canary.pdf xetex-canary.pdf luatex-canary.pdf canary.pdf
 
+# LaTeXML: --includestyles handles emo-test class
+latexmlc --includestyles --dest=demo-latexml.html demo.tex
+
+# TeX4ht: -l is necessary for selecting LuaTeX engine
+make4ht -l -j demo-tex4ht demo.tex
+
 # Document emo
 pdflatex emo.dtx
 makeindex -s gind.ist -o emo.ind emo.idx
@@ -155,7 +162,9 @@ Released under LPPL v1.3c or later
 %<*scaffold>
 \usedir{source/latex/emo}
 \generate{\file{\jobname.ins}{\from{\jobname.dtx}{install}}}
+\generate{\file{emo-test.cls}{\from{\jobname.dtx}{testing}}}
 \generate{\file{canary.tex}{\from{\jobname.dtx}{canary}}}
+\generate{\file{demo.tex}{\from{\jobname.dtx}{oneliner}}}
 \nopreamble\nopostamble
 \usedir{source/latex/emo}
 \generate{\file{build.sh}{\from{\jobname.dtx}{buildscript}}}
@@ -175,7 +184,7 @@ Released under LPPL v1.3c or later
 %<package>\NeedsTeXFormat{LaTeX2e}
 %<package>\ProvidesPackage{emo}
 %<*scaffold,package>
-    [2023/04/26 v0.4 emo•ji for all (LaTeX engines)]
+    [2023/05/01 v0.5 emo•ji for all (LaTeX engines)]
 %</scaffold,package>
 % ======================================================================================
 %<*driver>
@@ -274,17 +283,21 @@ Released under LPPL v1.3c or later
 % \end{verbatimish}
 % Do \emph{not} use |tex|; it mangles the embedded |README.md|. |pdflatex| also
 % extracts the files and then builds the documentation. Embedded files are
-% |build.sh|, |emo.ins|, |emo.sty|, |emo.sty.ltxml|, |canary.tex|, and
-% |README.md|. Extraction will overwrite existing files with the same name
-% without asking.
+% |build.sh|, |emo.ins|, |emo.sty|, |emo.sty.ltxml|, |emo-test.cls|,
+% |canary.tex|, |demo.tex|, and |README.md|. Extraction will overwrite existing
+% files with the same name without asking.
 %
 % \item Build the package documentation with change and symbol indices by
 % running:
 % \begin{verbatimish}
 %      \$ source build.sh
 % \end{verbatimish}
-% The shell script processes the tests in |canary.tex| with |pdflatex|,
-% |xelatex|, and |lualatex|, combining test results into |canary.pdf|. It also
+% The shell script serves three purposes: (1) To test emo across engines, (2) to
+% illustrate conversion to HTML, and (3) to generate the user documentation. In
+% more detail it processes the tests in |canary.tex| and |emo-test.cls| with
+% |pdflatex|, |xelatex|, and |lualatex|, combining the test results into
+% |canary.pdf|. It also processes |demo.tex| with LaTeXML and TeX4ht to generate
+% |demo-latexml.html| and |demo-tex4ht.html|, respectively. Finally, it
 % processes |emo.dtx| with |pdflatex| and |makeindex| to produce documentation
 % in |emo.pdf|.
 %
@@ -907,7 +920,7 @@ use LaTeXML::Package;
 %    \begin{macrocode}
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/04/26 v0.4 emo•ji for all (LaTeX engines)]
+    [2023/05/01 v0.5 emo•ji for all (LaTeX engines)]
 \newif\ifemo@extra\emo@extrafalse
 EOTeX
 %    \end{macrocode}
@@ -956,57 +969,63 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 %
 %
 % ^^A ==================================================================================
-% \section{Emo's Test Document}
+% \section{Testing Emo}
 % \changes{0.4}{}{Introduce a simple unit testing framework}
+%
+% As emo's tagline so loudly proclaims, this package is intended to enable emoji
+% across all major LaTeX engines. That requires testing across all major LaTeX
+% engines. The necessary macros and documents follow.
+%
+% Alas, we first start an always false conditional to prevent execution of this
+% code while generating the documentation.
+%    \begin{macrocode}
+%<*scaffold>
+\iffalse
+%</scaffold>
+%    \end{macrocode}
+%
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsection{Test Class}
 %
 % ^^A Reset line number counter
 % \makeatletter
 % \c@CodelineNo 0
 % \makeatother
 %
-% As emo's tagline so loudly pronounces, the package is intended to enable emoji
-% across all major LaTeX engines. This document provides the basis for testing
-% that this is indeed the case. It results in a concise card, or ``canary,''
-% that (1) identifies the engine, (2) lists the macro names |\emo|, |\lingchi|,
-% and |\YHWH| adorned with \emo{check-mark-button} or \emo{cross-mark} to
-% indicate whether the macro produced output of the expected width, and (3)
-% shows the same line of text using the three macros, with visible bounding
-% boxes for line and words as well as line only.
-%
-%
-% \subsection{Test Preamble}
-%
-% As usual, we start the test document by declaring its class and requiring
-% necessary packages. Notably, |standalone| and |varwidth| help generate a PDF
-% card that is sized to the test output. |iftex| is necessary for dynamically
-% detecting the LaTeX engine, and |emo| is about to be tested. The rest are
-% mostly indulgences for appearance. We also wrap the entire test document in an
-% |\iffalse| |\fi| block so that it doesn't interfere with documentation
-% generation.
 %    \begin{macrocode}
-%<*scaffold>
-\iffalse
-%</scaffold>
-%<*canary>
-\documentclass[border=10pt]{standalone}
-\usepackage[extra]{emo}
-\usepackage{iftex}
-\usepackage{xcolor}
-\usepackage{varwidth}
-
+%<*testing>
+%    \end{macrocode}
+%
+% The |emo-test| class builds on the |standalone| class so that the resulting
+% PDF has just the size of the output (plus a small margin). We require |emo|
+% for quality control, |iftex| for determining the LaTeX engine, and |xcolor|
+% for appearances sake.
+%    \begin{macrocode}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{emo-test}[2023/05/01 Testing emo]
+\LoadClass[border=10pt, varwidth=6in]{standalone}
+\RequirePackage[extra]{emo}
+\RequirePackage{iftex}
+\RequirePackage{xcolor}
+%    \end{macrocode}
+%
+% When requiring Libertinus and Inconsolata, relative order matters and does
+% so depending on laTeX engine.
+%    \begin{macrocode}
 \iftutex
-\usepackage{fontspec}
-\usepackage{libertinus}
+\RequirePackage{fontspec}
+\RequirePackage{libertinus}
 \setmonofont{inconsolata}
 \else
-\usepackage{libertinus}
-\usepackage{inconsolata}
+\RequirePackage{libertinus}
+\RequirePackage{inconsolata}
 \fi
 %    \end{macrocode}
 %
 % \begin{macro}{\enginename}
-% I couldn't find an existing macro that provides the engine name. Hence, we
-% gotta round up the usual suspects:
+% I couldn't find an existing macro that provides the desired functionality, so
+% we gotta round up the usual suspects...
 %    \begin{macrocode}
 \ifxetex
 \def\enginename{XeTeX}
@@ -1024,73 +1043,92 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\nobx}
-% \begin{macro}{\wbx}
-% \begin{macro}{\lbx}
-% To display text with bounding boxes, we define some (very neutral) colors and
-% boxes. In particular, |\nobx| and |\wbx|, respectively, do not or do draw a
-% box around a word or emoji. |\lbx| draws a box around the line of text.
+% \begin{macro}{emo@canary@frameinner}
+% \begin{macro}{emo@canary@frameouter}
+% \begin{macro}{emo@canary@background}
+% Define frame and background colors for boundary boxes of sample text.
 %    \begin{macrocode}
-\definecolor{wordboxframe}{HTML}{636366}
-\definecolor{lineboxframe}{HTML}{48484A}
-\definecolor{lineboxbg}{HTML}{E5E5EA}
-
-\setlength{\fboxrule}{0.5pt}
-\setlength{\fboxsep}{0pt}
-
-\newcommand\nobx[1]{#1}
-\newcommand\wbx[1]{\fcolorbox{wordboxframe}{white}{#1}}
-\newcommand\lbx[1]{\fcolorbox{lineboxframe}{lineboxbg}{#1}}
+\definecolor{emo@canary@frameinner}{HTML}{636366}
+\definecolor{emo@canary@frameouter}{HTML}{48484A}
+\definecolor{emo@canary@background}{HTML}{E5E5EA}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\boundedtext}
-% Drawing bounding boxes around ``building blocks,'' i.e., emoji and words
-% appearing in a line of text, can help identify buggy font metrics, spurious
-% spaces, and so on. But it also is an awfully cluttered presentation. Hence we
-% display the same line a second time, this time without the word-level boxes.
-% That seems like a good use case for LaTeX's star-form of a command.
+% Adjust settings for |\fcolorbox| so that it serves as bounding box.
 %    \begin{macrocode}
-\makeatletter
-\def\@boundedtext#1{%
-    \lbx{%
+\setlength{\fboxrule}{0.5pt}
+\setlength{\fboxsep}{0pt}
+%    \end{macrocode}
+%
+% \begin{macro}{\emo@nobox}
+% \begin{macro}{\emo@wordbox}
+% \begin{macro}{\emo@linebox}
+% The sample text may or may not show bounding boxens for words and emoji. It
+% always shows the bounding box for the entire line.
+%    \begin{macrocode}
+\newcommand\emo@nobox[1]{#1}
+\newcommand\emo@wordbox[1]{\fcolorbox{emo@canary@frameinner}{white}{#1}}
+\newcommand\emo@linebox[1]{\fcolorbox{emo@canary@frameouter}{emo@canary@background}{#1}}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\sampletext}
+% Show a single line of text that makes use of emo's three macros. To help
+% identify incorrect font metrics, spurious whitespace, and other issues, show
+% the line's bounding box and, for the starred version, the bounding boxes for
+% words and emoji, too.
+%    \begin{macrocode}
+\def\@sampletext#1{%
+    \emo@linebox{%
         #1{It's} #1{\lingchi}:
         #1{Please}, #1{\YHWH}, #1{have} #1{mercy}
         #1{\emo{pleading-face}}!%
     }%
+    \vspace{1ex}%
 }
-\newcommand*\boundedtext{%
-    \@ifstar{\@boundedtext{\wbx}}{\@boundedtext{\nobx}}%
+\newcommand*\sampletext{%
+    \@ifstar{\@sampletext{\emo@wordbox}}{\@sampletext{\emo@nobox}}%
 }
-\makeatother
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\checkwidth}
-% Validating the output of emo's macros turned out to be a bit trickier than I
-% had expected. The obvious approach, expanding macros to primitives and then
-% comparing to expected results, simply doesn't work---even though LaTeX does
-% have builtin support for eager expansion via, for example, |\expandafter| and
-% |\edef|. The reason is that unlike C, where the preprocessor runs strictly
-% before the rest of the compiler, macro expansion in TeX and LaTeX is
-% ubiquitous, delayed, repeated, interleaved, and so on.
+% \begin{macro}{\emo@canary@actual}
+% \begin{macro}{\emo@canary@expected}
+% Validating emo's macros turned out to be a bit trickier than I had expected.
+% The obvious approach, fully expanding the macros and then comparing the
+% result, doesn't work. TeX does support eager expansion via, for example,
+% |\expandafter| and |\edef|. But it does so only for macros that expand to text
+% but not boxes, graphics, and so on.
 %
 % ^^A https://tex.stackexchange.com/questions/67192/using-qstest-to-implement-unit-tests
 %
 % Instead, we need to take a sneakier approach: Generate a box with the macro
-% application and another box with the expected result and then compare the
-% widths of the two boxes. While that cannot detect all bugs, it can detect one
-% critical class of bugs: spurious whitespace! Alas, there is an additional
-% complication: |\lingchi| and |\YHWH| use |xspace| to avoid ugly trailing
-% backslash characters. But that also makes their results context-sensitive,
-% which might become a problem in a unit test without context. It is for just
-% that reason that the text arguments to |\sbox\actual| or |\sbox\expected|
-% below end with a period.
+% invocation and another box with the expected result and then compare the
+% widths of the two boxes. While that is an incomplete comparison and hence
+% cannot detect all bugs, it \emph{can} detect any bug where the macro's output
+% is shorter or longer than expected. That conveniently includes whitespace,
+% which is one of the bigger dangers for regressions.
+%
+% We get started on that testing strategy by defining two box registers.
+%    \begin{macrocode}
+\newsavebox{\emo@canary@actual}
+\newsavebox{\emo@canary@expected}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{checkwidth}
+% |\lingchi| and |\YHWH| rely on |xspace| to avoid (ugly) trailing backslash
+% characters. But that makes both macros fundamentally context-sensitive. To
+% ensure meaningful test results, we must fix the context too. |\checkwidth|
+% does that by following the macro output with a period.
 %
 % Even though |\checkwidth| only tests three macros and two of them take no
-% arguments, it still requires five arguments to cover all variability:
+% arguments, the test macro still needs five arguments to cover all variability:
 % \begin{enumerate}
 % \item name of macro being tested;
 % \item macro invocation being tested;
@@ -1101,78 +1139,109 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 % The third and fourth arguments are separate because the font variable only
 % exists when running under LuaLaTeX.
 %    \begin{macrocode}
-\newsavebox{\actual}
-\newsavebox{\expected}
-
 \newcommand\checkwidth[5]{%
-    \sbox\actual{#2.}%
-    \ifluatex%
-        \sbox\expected{%
+    \sbox\emo@canary@actual{#2.}%
+    \ifx\emo@backend\emo@use@unicode%
+        \sbox\emo@canary@expected{\begingroup #4\endgroup.}%
+    \else%
+    \ifx\emo@backend\emo@use@font%
+        \sbox\emo@canary@expected{%
             \begingroup\csname#3\endcsname #4\endgroup.}%
     \else%
-        \sbox\expected{%
+        \sbox\emo@canary@expected{%
             \raisebox{-0.2ex}{%
                 \includegraphics[height=1em]{emo-graphics/emo-#5}}.}%
     \fi%
+    \fi%
     \def\macroname{\texttt{\char`\\#1}}%
-    \ifdim\wd\actual=\wd\expected%
+    \ifdim\wd\emo@canary@actual=\wd\emo@canary@expected%
         \mbox{\macroname{} \emo{check-mark-button}}%
     \else%
-        \edef\actualwidth{\the\wd\actual}%
-        \edef\expectedwidth{\the\wd\expected}%
-        \mbox{\macroname{} \emo{cross-mark} \actualwidth{} \expectedwidth}%
+        \edef\emo@actual{\the\wd\emo@canary@actual}%
+        \edef\emo@expected{\the\wd\emo@canary@expected}%
+        \mbox{\macroname{} \emo{cross-mark} \emo@actual{} \emo@expected}%
     \fi%
 }
 %    \end{macrocode}
 % \end{macro}
 %
-%
-% \subsection{Test Body}
-%
-% All test macros have been defined and we can finally get to actually testing
-% emo. We put all output in a |varwidth| environment to ensure that the PDF is
-% content-sized. Since the output includes text with bounding boxes, we use a
-% really large font size.
+% Use small gap between paragra[phs instead of indentation.
 %    \begin{macrocode}
-\begin{document}
-\begin{varwidth}{6in}
-\Huge
-
+\setlength\parindent{0pt}
+\setlength{\parskip}{1ex}
 %    \end{macrocode}
 %
-% At the top of the card are the engine name and the width tests, one for each
-% macro.
+% That's it for emo's testing class.
 %    \begin{macrocode}
-\noindent\enginename:
-\Large Width of
+%</testing>
+%    \end{macrocode}
+%
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsection{Test Runner and Report}
+%
+% ^^A Reset line number counter
+% \makeatletter
+% \c@CodelineNo 0
+% \makeatother
+%
+%    \begin{macrocode}
+%<*canary>
+%    \end{macrocode}
+%
+% Each test report identifies the LaTeX engine and then shows the results of the
+% width tests for emo's three user-visible macros. If a test passes, the output
+% only contains the macro name and a \emo{check-mark-button} check mark. If a
+% test fails, the output contains the macro name, the divergent box widths, and
+% a \emo{cross-mark} cross mark. In the latter case, the width test results
+% spill into the next line (at the least).
+%    \begin{macrocode}
+\documentclass{emo-test}
+\begin{document}
+\Huge
+\enginename: {\Large Width of
 \checkwidth{emo}{\emo{robot}}{emo@font}{\char"1F916}{robot},
 \checkwidth{lingchi}{\lingchi}{emo@chinese}{\char"51CC\char"9072}{lingchi},
-\checkwidth{YHWH}{\YHWH}{emo@hebrew}{\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}
-\vspace{1ex}\Huge
-
+\checkwidth{YHWH}{\YHWH}{emo@hebrew}{\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}}
+\vspace{1ex}\par
 %    \end{macrocode}
 %
-% At the bottom of the card are the two lines of text with bounding boxes,
-% \emph{with} word-level boxes and then without.
+% Next is the sample text, first with and then without boundary boxes for words
+% and emoji.
 %    \begin{macrocode}
-\boundedtext*{}
-\vspace{1ex}\newline
-\boundedtext{}
-
-%    \end{macrocode}
-%
-% That's it as far as tests are concerned. Clearly, writing the test macros was
-% more involved than using them. That effort also is the reason I decided to
-% include the annotated test document in |emo.dtx|. All that's left at this
-% point is wrapping up the test document, wrapping up the enclosing conditional,
-% and wrapping up emo's documentation. It's a wrap \emo{zany-face}
-%    \begin{macrocode}
-\end{varwidth}
+\sampletext*\par\sampletext
 \end{document}
+%    \end{macrocode}
+%
+% That's it for the tests and report.
+%    \begin{macrocode}
 %</canary>
-%<*scaffold>
-\fi
-%</scaffold>
+%    \end{macrocode}
+%
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsection{Simple Test Document}
+%
+% ^^A Reset line number counter
+% \makeatletter
+% \c@CodelineNo 0
+% \makeatother
+%
+%    \begin{macrocode}
+%<*oneliner>
+%    \end{macrocode}
+%
+% Not much to see here besides one line of content.s
+%    \begin{macrocode}
+\documentclass{emo-test}
+\begin{document}
+\Huge\sampletext
+\end{document}
+%    \end{macrocode}
+%
+% It's a wrap \emo{zany-face}
+%    \begin{macrocode}
+%</oneliner>
 %    \end{macrocode}
 %
 %

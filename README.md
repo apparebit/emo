@@ -28,7 +28,8 @@ each use of an emoji into an emo index or `.edx` file.
 To **extract files** embedded in [emo.dtx](emo.dtx), run `pdftex emo.dtx`. Note
 that plain old `tex` won't do, since it mangles this README. `pdflatex` works,
 but also generates the package documentation. The embedded files are `build.sh`,
-`emo.ins`, `emo.sty`, `emo.sty.ltxml`, `canary.tex`, and `README.md`.
+`emo.ins`, `emo.sty`, `emo.sty.ltxml`, `emo-test.cls`, `canary.tex`, `demo.tex`,
+and `README.md`.
 
 To **build the documentation** embedded in `emo.dtx`, run `source build.sh`. The
 shell script invokes `pdflatex emo.dtx` thrice and `makeindex` once each for the
