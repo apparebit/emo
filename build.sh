@@ -7,6 +7,10 @@ pdfunite pdftex-canary.pdf xetex-canary.pdf luatex-canary.pdf canary.pdf
 # LaTeXML: --includestyles handles emo-test class
 latexmlc --includestyles --dest=demo-latexml.html demo.tex
 
+# Remove run date comment and footer. The latter is just plain tacky.
+sed -i '' '/^<!--Generated on /d' ./demo-latexml.html
+sed -i '' '/^<div class="ltx_page_logo/d' ./demo-latexml.html
+
 # TeX4ht: -l is necessary for selecting LuaTeX engine
 make4ht -l -j demo-tex4ht demo.tex
 
