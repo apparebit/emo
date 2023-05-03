@@ -16,7 +16,6 @@ ProcessOptions();
 InputDefinitions('emo', type => 'def', noltxml => 1);
 DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
 if (IfCondition(T_CS('\ifemo@extra'))) {
-    RequirePackage('xspace');
-    DefMacro('\lingchi', "\x{51cc}\x{9072}\\xspace");
-    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}\\xspace");
+    DefMacro('\lingchi', "\x{51cc}\x{9072}");
+    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}");
 }

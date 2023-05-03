@@ -43,5 +43,5 @@
 
 \ifemo@extra
 \def\emo@emoji@lingchi{凌遲}
-\def\emo@emoji@YHWH{\begingroup\textdir TRT יהוה\endgroup}
+\def\emo@emoji@YHWH{יהוה}
 \fi

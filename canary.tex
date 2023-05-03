@@ -15,9 +15,10 @@
 \begin{document}
 \Huge
 \enginename: {\Large Width of
-\checkwidth{emo}{\emo{robot}}{emo@font}{\char"1F916}{robot},
-\checkwidth{lingchi}{\lingchi}{emo@chinese}{\char"51CC\char"9072}{lingchi},
-\checkwidth{YHWH}{\YHWH}{emo@hebrew}{\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}}
+\checkwidth{emo}{\emo{robot}}{emoji}{\char"1F916}{robot},
+\checkwidth{lingchi}{\lingchi}{chinese}{\char"51CC\char"9072}{lingchi},
+\checkwidth{YHWH}{\YHWH}{hebrew}{%
+    \csname textdir\endcsname TRT\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}}
 \vspace{1ex}\par
 \sampletext*\par\sampletext
 \end{document}

@@ -119,6 +119,10 @@ pdfunite pdftex-canary.pdf xetex-canary.pdf luatex-canary.pdf canary.pdf
 # LaTeXML: --includestyles handles emo-test class
 latexmlc --includestyles --dest=demo-latexml.html demo.tex
 
+# Remove run date comment and footer. The latter is just plain tacky.
+sed -i '' '/^<!--Generated on /d' ./demo-latexml.html
+sed -i '' '/^<div class="ltx_page_logo/d' ./demo-latexml.html
+
 # TeX4ht: -l is necessary for selecting LuaTeX engine
 make4ht -l -j demo-tex4ht demo.tex
 
@@ -223,6 +227,7 @@ Released under LPPL v1.3c or later
 % \changes{0.2}{}{Support {\tt pdftex} for extracting {\tt emo.dtx}}
 % \changes{0.3}{}{Support TeX4ht for conversion to HTML}
 % \changes{0.4}{}{Automate testing across engines with {\tt canary.tex}}
+% \changes{0.5}{}{Use LaTeX hooks for handling engines and options}
 %
 % \GetFileInfo{\jobname.dtx}
 %
@@ -344,7 +349,7 @@ Released under LPPL v1.3c or later
 % options:
 % \begin{description}
 % \item[extra] Also define the |\lingchi| and |\YHWH| macros, which produce
-%     \lingchi and \YHWH.
+%     \lingchi\ and \YHWH.
 % \item[index] Create an emoji index tagged |emo| with the |.edx| extension for
 %     the raw index and the |.end| extension for the processed index. This
 %     option relies on the |index| package, generates the raw |.edx| file,
@@ -452,8 +457,8 @@ Released under LPPL v1.3c or later
 %
 % \DescribeMacro{\lingchi}
 % \DescribeMacro{\YHWH}
-% The |\lingchi| and |\YHWH| macros take no arguments and produce \lingchi and
-% \YHWH. They are only available if emo is used with the \textsf{extra} option.
+% The |\lingchi| and |\YHWH| macros take no arguments and produce \lingchi\ and
+% \YHWH. They are only available if emo is used with the |extra| option.
 % The former renders the Chinese term for ``death by a thousand cuts.'' While
 % originally an execution method, the term applies to surprisingly many software
 % systems as well. The latter produces the Tetragrammaton, the Hebrew name for
@@ -567,13 +572,14 @@ Released under LPPL v1.3c or later
 % ^^A ==================================================================================
 % \section{Implementation}
 %
-% Let's get started with emo's implementation:
+% Let's get started on emo's implementation:
 %    \begin{macrocode}
 %<*package>
 %    \end{macrocode}
 %
-% Except, the package implementation started near the top of the |emo.dtx| file,
-% before the documentation preamble. We repeat it here for completeness:
+% Except, that implementation started near the top of this |emo.dtx| file, well
+% before the documentation's preamble. For completeness, here is the package
+% declaration again:
 %
 % \begin{verbatimish}
 % |\NeedsTeXFormat{LaTeX2e}|
@@ -581,8 +587,9 @@ Released under LPPL v1.3c or later
 % |    |[\filedate\space\fileversion\space\fileinfo]
 % \end{verbatimish}
 %
-% And no, I didn't repeat the version number, date, or package information.
-% Check |emo.dtx|.
+% Unfortunately, emo's version number appears in triplicate in this file, which
+% makes cutting a release a little more tricky than it should be. Alas, the
+% above, faux package declaration is not one of those repeat offenders. Really.
 %
 %
 % ^^A ----------------------------------------------------------------------------------
@@ -591,17 +598,18 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\ifemo@extra}
 % \begin{macro}{\ifemo@index}
 % \begin{macro}{\ifemo@debug}
-% \changes{0.4}{}{Add \textsf{debug} option for drawing boundary boxes}
-% Emo's \textsf{extra} and \textsf{index} options are simple flags. So is the
-% only incompletely documented \textsf{debug} option. We declare a new
-% conditional for each and, if |\usepackage| includes an option, toggle the
-% conditional's state.
+% \changes{0.4}{}{Add {\tt debug} option for drawing boundary boxes}
+% Define a conditional flag for each package option.
 %    \begin{macrocode}
 \newif\ifemo@extra\emo@extrafalse
-\DeclareOption{extra}{\emo@extratrue}
 \newif\ifemo@indexing\emo@indexingfalse
-\DeclareOption{index}{\emo@indexingtrue}
 \newif\ifemo@debug\emo@debugfalse
+%    \end{macrocode}
+%
+% Wire each conditional to the package option and then process them all.
+%    \begin{macrocode}
+\DeclareOption{extra}{\emo@extratrue}
+\DeclareOption{index}{\emo@indexingtrue}
 \DeclareOption{debug}{\emo@debugtrue}
 \ProcessOptions\relax
 %    \end{macrocode}
@@ -611,79 +619,69 @@ Released under LPPL v1.3c or later
 %
 %
 % ^^A ----------------------------------------------------------------------------------
-% \subsection{Setup Including Dependencies}
+% \subsection{Package Dependencies and Backend Selection}
 %
-% The dependency on |inputenc| effectively declares this file's encoding to be
-% UTF-8. The XeTeX and LuaTeX engines already expect files to be encoded that
-% way and hence ignore the declaration. However, pdfTeX supports other (legacy)
-% encodings and needs to be told.
+% Require |inputenc| to declare this file's character encoding as UTF-8. XeTeX
+% and LuaTeX already use that encoding by default and hence this line is
+% redundant. But pdfTeX originates from darker, pre-Unicode times and thus needs
+% to be told. Though thankfully, it does support the encoding by now.
 %    \begin{macrocode}
 \RequirePackage[utf8]{inputenc}
 %    \end{macrocode}
 %
-% \begin{macro}{\emo@use@unicode}
-% \begin{macro}{\emo@use@font}
-% \begin{macro}{\emo@use@pdf}
-% \begin{macro}{\emo@backend}
+% \begin{macro}{\ifemo@use@unicode}
+% \begin{macro}{\ifemo@use@font}
+% \begin{macro}{\ifemo@use@pdf}
 % \changes{0.3}{}{Make backend support scalable through symbolic names}
-% Emo currently supports three different backends for actually rendering emoji,
-% namely the backend named |\emo@use@unicode| emits Unicode codepoints in a
-% group, the one named |\emo@use@font| emits font selection before those same
-% Unicode codepoints in the group, and the one named |\emo@use@pdf| emits PDF
-% graphics. Once we know to name the backends, we can set |\emo@backend| to the
-% currently active backend, determined by interrogating the runtime environment.
-% Alas, we still need to implement the three backends; but |\emo@content| is
-% defined closer to the end of the package implementation.
+% Define a conditional flag for each major backend configuration. They are
+% \emph{not} orthogonal: |\ifemo@use@unicode| and |\ifemo@use@pdf| are mutually
+% exclusive and determine whether emo generates Unicode text or PDF graphics.
+% For |\ifemo@use@font| to be enabled, |\ifemo@use@unicode| must already be
+% enabled as well.
 %    \begin{macrocode}
-\def\emo@use@unicode{backend:unicode}
-\def\emo@use@font{backend:font+unicode}
-\def\emo@use@pdf{backend:pdf}
+\newif\ifemo@use@unicode
+\newif\ifemo@use@font
+\newif\ifemo@use@pdf
+%    \end{macrocode}
+%
+% Inspect the current engine via |iftex| and configure the just defined backend
+% flags.
+%    \begin{macrocode}
 \RequirePackage{iftex}
 \ifdefined\HCode
-    \let\emo@backend=\emo@use@unicode
+    \emo@use@unicodetrue
 \else
 \ifluatex
-    \let\emo@backend=\emo@use@font
+    \emo@use@unicodetrue
+    \emo@use@fonttrue
 \else
-    \let\emo@backend=\emo@use@pdf
+    \emo@use@pdftrue
 \fi
 \fi
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 % \end{macro}
-% \end{macro}
 %
-% With the backend selected, we can now require backend-specific packages,
-% namely |fontspec| for selecting fonts in the |\emo@use@font| backend and
-% |graphicx| for including PDF graphics in the |\emo@use@pdf| backend. The
-% |\emo@use@unicode| backend has no similar requirements.
-%    \begin{macrocode}
-\ifx\emo@backend\emo@use@font
-    \RequirePackage{fontspec}
-\fi
-\ifx\emo@backend\emo@use@pdf
-    \RequirePackage{graphicx}
-\fi
-%    \end{macrocode}
-%
-% Next, emo requires |xcolor| for formatting highly visible error messages
-% within the text. Always including another package that is only used when there
-% are errors is not ideal. But when I tried calling |\RequirePackage| for
-% |xcolor| from inside the error macro, it didn't work. Alternatively, I could
-% make in-text errors optional.
+% Require |xcolor| for formatting highly visible error messages within the
+% generated document. Always including another package that is only used when
+% there are errors is not ideal. But I couldn't get on-demand package loading to
+% work. So we have to eagerly require the package.
 %    \begin{macrocode}
 \RequirePackage{xcolor}
 %    \end{macrocode}
 %
-% Finally, emo's options also have dependencies, with \textsf{extra} requiring
-% the |xspace| package and \textsf{index} requiring the |index| package:
+% Each of the three remaining requirements either depends on a package option or
+% on the backend.
 %    \begin{macrocode}
-\ifemo@extra
-    \RequirePackage{xspace}
-\fi
 \ifemo@indexing
     \RequirePackage{index}
+\fi
+\ifemo@use@font
+    \RequirePackage{fontspec}
+\fi
+\ifemo@use@pdf
+    \RequirePackage{graphicx}
 \fi
 %    \end{macrocode}
 %
@@ -694,17 +692,16 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\emo@emoji@name}
 % \changes{0.3}{}{Include {\tt\textbackslash lingchi} and {\tt\textbackslash YWHW}
 % as necessary}
-% For each emoji with a PDF graphic in the |emo-graphics| directory and, if
-% enabled, the two extra macros, the corresponding
-% |\emo@emoji@|\meta{emoji-name} macro expands to its Unicode sequence. With
-% over 3,000 distinct emoji in Unicode 15, emo relies on a Python script for
-% populating the graphics directory and writing the table to the
-% \texttt{\jobname.def} file. Since the package code does not change after
-% installation but the emoji table may very well change, they are kept separate.
-% Alternatively, we could use DocStrip to assemble the package file from three
-% parts, the code from the previous sections, then the contents of the emoji
-% table in |emo.def|, and then all subsequent code. Alas, that seems a bit much
-% for turning two files into one.
+% The emoji table defines an entry for each enabled emoji and, if the |extra|
+% option is present, also for the two extra macros. Each entry maps the name of
+% the emoji to its Unicode sequence. For example, the control sequence
+% |\emo@emoji@parrot| has \emo{parrot} as its value. Since there are over 3,000
+% distinct emoji in Unicode 15, emo does not support all of them out of the box.
+% Rather it relies on a Python script for populating the |emo-graphics|
+% directory with the necessary PDF files and writing the table to
+% \texttt{\jobname.def}. This nicely keeps code that may change after
+% installation, the emoji table, from code that doesn't, the package
+% implementation itself.
 %    \begin{macrocode}
 \input{emo.def}
 %    \end{macrocode}
@@ -739,7 +736,7 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\emo@ifdef}
 % Validate the emoji name given as first argument. The macro expands to the
 % second argument if the name is valid and an error message otherwise. Its
-% implementation relies on the |emo@emoji| table.
+% implementation relies on the emoji table as the primary source of truth.
 %    \begin{macrocode}
 \def\emo@ifdef#1#2{%
     \ifcsname emo@emoji@#1\endcsname#2\else%
@@ -750,115 +747,201 @@ Released under LPPL v1.3c or later
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\emo@index}
-% If indexing is enabled, record the use of an emoji. Otherwise, do nothing.
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsection{User Macros and Hooks}
+%
+% Between versions 0.1 and 0.4, the implementation evolved considerably. In
+% versions 0.1 and 0.2, I focused mostly on getting emo working across all three
+% major LaTeX engines. I also tried to manage variability by introducing a
+% number of internal macros, with some of them defined at least twice to account
+% for features being present or not. Hence it wasn't surprising when I also
+% ended up implementing each of the three user macros |\emo|, |\lingchi|, and
+% |\YHWH| twice, with one version selecting an appropriate font and then
+% emitting Unicode and the second, fallback version using PDF graphics.
+%
+% For version 0.3, I added support for TeX4ht as the second option for
+% converting to HTML. That meant adding a third backend, which emits Unicode
+% only, \emph{without} font selection. I also integrated the Unicode code points
+% for |\lingchi| and |\YHWH| into the emoji table and abstracted over the three
+% macros' content versus surrounding grouping, indexing, and error checking
+% logic. As a result, the implementation appeared better organized and simpler
+% despite supporting more feature variability.
+%
+% With version 0.4, I introduced the |debug| option to emo, which increased
+% implementation complexity again. Now, each macro of the three macros required
+% an optional wrapper with the framed box visualizing the emoji's bounding box.
+% Just as my discontent with the implementation grew, my work on a bespoke
+% testing class also significantly deepened my TeX-fu and so I started looking
+% out for a more ergonomic approach to emo's implementation as well. I now
+% believe I found that approach thanks to
+% \href{http://tug.ctan.org/macros/latex/base/lthooks-code.pdf}{LaTeX hooks}.
+%
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsubsection{A Skeleton of Hooks}
+%
+% \begin{macro}{emo/render/before}
+% \begin{macro}{emo/render/emoji}
+% \begin{macro}{emo/render/chinese}
+% \begin{macro}{emo/render/hebrew}
+% \begin{macro}{emo/render/content}
+% \begin{macro}{emo/render/after}
+% To define emo's hooks, notice that, in addition to entity name, Unicode code
+% points, and PDF graphics, the only other major source of variability is the
+% font selection or lack thereof. In fact, each of the three macros necessarily
+% must have its own font selection logic and hence dedicated hook, since each
+% macro produces text in a different ``language'' and writing system. Otherwise,
+% all three macros have the exact same structure and hooks: A group combines the
+% |emo/render/emoji|, |emo/render/chinese|, or |emo/render/hebrew| hook for font
+% selection with the |emo/render/content| hook for the actual text. The
+% |emo/render/before| and |emo/render/after| hooks enable aspect-oriented
+% functionality, such as indexing or logging.
 %    \begin{macrocode}
-\ifemo@indexing
-    \newindex{emo}{edx}{end}{Emoji Index}
-    \def\emo@index#1{\index[emo]{#1}}
-\else
-    \def\emo@index#1{}
+\NewHook{emo/render/before}
+\NewHook{emo/render/emoji}
+\ifemo@extra
+\NewHook{emo/render/chinese}
+\NewHook{emo/render/hebrew}
 \fi
+\NewHook{emo/render/content}
+\NewReversedHook{emo/render/after}
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+% \end{macro}
 %
-% \begin{macro}{\emo@content}
-% \changes{0.4}{}{Remove extra space from PDF renderer}
-% Render the emoji content.  This macro interfaces with the backend and thus
-% needs to be defined as many times as there are backends: The Unicode backend
-% just expands the entry from the emoji table. The font backend does the same,
-% but sets the font to Noto Color Emoji first. The PDF backend instead includes
-% the corresponding PDF graphic.
+% \begin{macro}{\emo@makecommand}
+% \begin{macro}{\emo@key}
+% \begin{macro}{\emo@value}
+% With the hooks defined, it's fairly straight-forward to write a macro that
+% invokes those hooks in the prescribed order. Since the font selection hook
+% differs between the three macros, it is the only argument to
+% |\emo@makecommand|. Hooks have no arguments beyond their labels. So to make
+% the current key and, after the group has been rendered, the corresponding
+% value available in hooks, the macro below introduces a naming convention, with
+% |\emo@key| providing the name across all hooks and |\emo@value| providing the
+% rendered content to the |emo/render/after| hook. The latter can modify the
+% macro's result by redefining |\emo@value|. In fact, as you can see shortly,
+% that's just how the |debug| package option is implemented.
 %    \begin{macrocode}
-\ifx\emo@backend\emo@use@unicode
-    \def\emo@content#1{%
-        \begingroup\csname emo@emoji@#1\endcsname\endgroup%
-    }
-\else
-\ifx\emo@backend\emo@use@font
-    \newfontface\emo@font[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
-    \def\emo@content#1{%
-        \begingroup\emo@font\csname emo@emoji@#1\endcsname\endgroup%
-    }
-\else
-    \def\emo@content#1{%
-        \raisebox{-0.2ex}{%
-            \includegraphics[height=1em]{emo-graphics/emo-#1}}%
-    }
-\fi
-\fi
+\def\emo@makecommand#1{%
+    \noexpand\def\noexpand\emo@key{##1}%
+    \noexpand\emo@ifdef{##1}{%
+        \noexpand\UseHook{emo/render/before}%
+        \noexpand\def\noexpand\emo@value{%
+            \noexpand\begingroup%
+            \noexpand#1%
+            \noexpand\UseHook{emo/render/content}%
+            \noexpand\endgroup%
+        }%
+        \noexpand\UseHook{emo/render/after}%
+        \noexpand\emo@value%
+    }%
+}
 %    \end{macrocode}
-%
-% In debug mode, emo draws a box around the content of |\emo|. That may help
-% when tracking down spurious whitespace.
-%    \begin{macrocode}
-\ifemo@debug
-    \let\emo@realcontent=\emo@content
-    \def\emo@content#1{\fbox{\emo@realcontent{#1}}}
-\fi
-%    \end{macrocode}
+% \end{macro}
+% \end{macro}
 % \end{macro}
 %
 %
 % ^^A ----------------------------------------------------------------------------------
-% \subsection{User Macros}
+% \subsubsection{The User Macros}
 %
 % \begin{macro}{\emo}
-% Thanks to carefully defined internal macros, the implementation of the main
-% |\emo| macro is almost trivial. If the emoji name passes muster, emit an index
-% entry and render the emoji content:
+% Render the named emoji either as Unicode or as a PDF graphic. To do so,
+% instantiate the skeleton with the font selection hook for emoji. We eagerly
+% evaluate the instantiation of the skeleton with |\edef|, so that it forms a
+% coherent macro body. At the same time, to ensure that eager evaluation doesn't
+% fail, the definition of |\emo@makecommand| liberally uses |\noexpand|.
 %    \begin{macrocode}
-\newcommand\emo[1]{%
-    \emo@ifdef{#1}{%
-        \emo@index{#1}%
-        \emo@content{#1}%
-    }%
-}
+\edef\emo#1{\emo@makecommand{\UseHook{emo/render/emoji}}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\lingchi}
 % \changes{0.3}{}{Build on {\tt\textbackslash emo} by default}
+% \changes{0.5}{}{Drop use of trailing {\tt xspace}}
 % \begin{macro}{\YHWH}
 % \changes{0.3}{}{Build on {\tt\textbackslash emo} by default}
-%
-% Since the emoji table in |emo.def| includes macros with the Unicode codepoints
-% for ``lingchi'' and ``YHWH,'' the implementation of |\lingchi| and |\YHWH|
-% just delegates to |\emo|.
+% \changes{0.5}{}{Drop use of trailing {\tt xspace}}
+% The definitions for the two extra macros aren't much more involved. Though
+% they do require a helper macro each, since the user-facing macros do not
+% accept arguments.
 %    \begin{macrocode}
 \ifemo@extra
-\ifx\emo@backend\emo@use@font\else
-    \newcommand\lingchi{\emo{lingchi}\xspace}
-    \newcommand\YHWH{\emo{YHWH}\xspace}
+\edef\@lingchi#1{\emo@makecommand{\UseHook{emo/render/chinese}}}
+\edef\@YHWH#1{\emo@makecommand{\UseHook{emo/render/hebrew}}}
+\def\lingchi{\@lingchi{lingchi}}
+\def\YHWH{\@YHWH{YHWH}}
+\fi
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+%
+% ^^A ----------------------------------------------------------------------------------
+% \subsubsection{Activating the Hooks}
+%
+% So far, the three user-facing macros have little impact beyond generating
+% empty groups. We change that by activating the hooks as required by the
+% current backend configuration and package options. The neat part about this
+% approach is that we don't need to do anything if an option is disabled.
+%
+% If the |index| option is enabled, create the necessary index and emit entries
+% through the |emo/render/before| hook.
+%    \begin{macrocode}
+\ifemo@indexing
+\newindex{emo}{edx}{end}{Emoji Index}
+\def\emo@index#1{\index[emo]{#1}}
+\AddToHook{emo/render/before}{\expandafter\emo@index\expandafter{\emo@key}}
 \fi
 %    \end{macrocode}
 %
-% Except, as hinted at by the backend test, delegating to |\emo| won't work when
-% using fonts, since |\emo| uses Noto color emoji whereas the two extra macros
-% do not. In that case, we define alternative versions that, similar to |\emo|
-% rely on their own specialized |\emo@content| macros and also wrap them when
-% the \textsf{debug} package option is enabled.
+% Next, if the backend uses fonts, set up font selection in the corresponding
+% hooks. We only activate the |emo/render/chinese| and |emo/render/hebrew| hooks
+% if the |extra| package option is enabled. Note that since Hebrew is written
+% right-to-left, the font selection hook also set the text direction. This is
+% safe to do because font selection and content are always enclosed in a group.
 %    \begin{macrocode}
-\ifx\emo@backend\emo@use@font
-    \newfontface\emo@chinese{emo-lingchi.ttf}
-    \newfontface\emo@hebrew{LinLibertine_R.otf}
-    \def\emo@lingchi@content{\begingroup\emo@chinese\emo@emoji@lingchi\endgroup}
-    \def\emo@YHWH@content{\begingroup\emo@hebrew\emo@emoji@YHWH\endgroup}
-
-    \ifemo@debug
-        \let\emo@lingchi@realcontent=\emo@lingchi@content
-        \let\emo@YHWH@content=\emo@YHWH@content
-        \def\emo@lingchi@content{\fbox{\emo@lingchi@realcontent}}
-        \def\emo@YHWH@content{\fbox{\emo@YHWH@realcontent}}
-    \fi
-
-    \newcommand\lingchi{\emo@index{lingchi}\emo@lingchi@content\xspace}
-    \newcommand\YHWH{\emo@index{YHWH}\emo@YHWH@content\xspace}
+\ifemo@use@font
+\newfontface\emo@font@emoji[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
+\AddToHook{emo/render/emoji}{\emo@font@emoji}
+\ifemo@extra
+\newfontface\emo@font@chinese{emo-lingchi.ttf}
+\newfontface\emo@font@hebrew{LinLibertine_R.otf}
+\AddToHook{emo/render/chinese}{\emo@font@chinese}
+\AddToHook{emo/render/hebrew}{\emo@font@hebrew\textdir TRT}
 \fi
 \fi
 %    \end{macrocode}
-% \end{macro}
-% \end{macro}
+%
+% Next, we activate the |emo/render/content| hook to either emit Unicode code
+% points or PDF graphics.
+%    \begin{macrocode}
+\ifemo@use@unicode
+\AddToHook{emo/render/content}{\csname emo@emoji@\emo@key\endcsname}
+\fi
+\ifemo@use@pdf
+\AddToHook{emo/render/content}{%
+    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-\emo@key}}%
+}
+\fi
+%    \end{macrocode}
+%
+% Finally, if the |debug| package option is enabled, we wrap the rendered
+% content in a frame.
+%    \begin{macrocode}
+\ifemo@debug
+\AddToHook{emo/render/after}{%
+    \let\emo@realvalue\emo@value%
+    \def\emo@value{\fbox{\emo@realvalue}}%
+}
+\fi
+%    \end{macrocode}
 %
 % Et voil\`a. That's it!
 %
@@ -879,7 +962,7 @@ Released under LPPL v1.3c or later
 % To support conversion from LaTeX to HTML, emo includes a so-called binding for
 % \href{https://github.com/brucemiller/LaTeXML}{LaTeXML}. It effectively is a
 % (much simplified) re-implementation of emo's core functionality, only written
-% in Perl against LaTeXML's API. The binding ignores the \textsf{index} option
+% in Perl against LaTeXML's API. The binding ignores the |index| option
 % and does not perform error checking on emoji names. If either is important to
 % you, please compile the document with LaTeX first. Furthermore, the binding
 % emits necessary Unicode codepoints only, without font annotations. If you want
@@ -916,7 +999,7 @@ use LaTeXML::Package;
 % \begin{macro}{\ifemo@extra}
 % Next, we use raw TeX to declare the LaTeX package and define the |emo@extra|
 % conditional. There is no need to define the |emo@indexing| conditional, since
-% it corresponds to the unsupported \textsf{index} option.
+% it corresponds to the unsupported |index| option.
 %    \begin{macrocode}
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
@@ -949,14 +1032,13 @@ DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
 %
 % \begin{macro}{\lingchi}
 % \begin{macro}{\YHWH}
-% If the |emo@extra| conditional is enabled, require the |xspace| package and then
-% provide minimal re-definitions of the |\lingchi| and |\YHWH| macros. Both simply
-% expand to the necessary Unicode codepoints.
+% If the |emo@extra| conditional is enabled, provide minimal re-definitions of
+% the |\lingchi| and |\YHWH| macros. Both simply expand to the necessary Unicode
+% codepoints.
 %    \begin{macrocode}
 if (IfCondition(T_CS('\ifemo@extra'))) {
-    RequirePackage('xspace');
-    DefMacro('\lingchi', "\x{51cc}\x{9072}\\xspace");
-    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}\\xspace");
+    DefMacro('\lingchi', "\x{51cc}\x{9072}");
+    DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}");
 }
 %    \end{macrocode}
 % \end{macro}
@@ -997,14 +1079,31 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 %<*testing>
 %    \end{macrocode}
 %
-% The |emo-test| class builds on the |standalone| class so that the resulting
-% PDF has just the size of the output (plus a small margin). We require |emo|
-% for quality control, |iftex| for determining the LaTeX engine, and |xcolor|
-% for appearances sake.
+% The |emo-test| class contains all the code for testing |emo|.
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{emo-test}[2023/05/01 Testing emo]
+\ProvidesClass{emo-test}[2023/05/01 v0.5 Testing emo]
+%    \end{macrocode}
+%
+% |emo-test| builds on |standalone| so that the resulting PDF has just the size
+% of the output (plus some small margin). Its |verbose| option results in
+% additional output from |\checkwidth| to help debug failing tests. All other
+% options are passed down to the |standalone| class. Consider the
+% |lua-visual-debug| package for verbose mode under LuaTeX.
+%    \begin{macrocode}
+\newif\ifemo@verbose@canary\emo@verbose@canaryfalse
+\DeclareOption{verbose}{\emo@verbose@canarytrue}
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{standalone}}
+\ProcessOptions\relax
 \LoadClass[border=10pt, varwidth=6in]{standalone}
+%    \end{macrocode}
+%
+% We require |emo| since it is being tested, |iftex| for determining the LaTeX
+% engine, and |xcolor| for appearances sake. This class reuses several of emo's
+% internal macros, including |\ifemo@use@unicode|, |\ifemo@use@font|, and
+% |\ifemo@use@pdf| for backend selection as well as |\emo@font@emoji|,
+% |\emo@font@chinese|, and |\emo@font@hebrew| for font selection.
+%    \begin{macrocode}
 \RequirePackage[extra]{emo}
 \RequirePackage{iftex}
 \RequirePackage{xcolor}
@@ -1069,8 +1168,10 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 % always shows the bounding box for the entire line.
 %    \begin{macrocode}
 \newcommand\emo@nobox[1]{#1}
-\newcommand\emo@wordbox[1]{\fcolorbox{emo@canary@frameinner}{white}{#1}}
-\newcommand\emo@linebox[1]{\fcolorbox{emo@canary@frameouter}{emo@canary@background}{#1}}
+\newcommand\emo@wordbox[1]{%
+    \fcolorbox{emo@canary@frameinner}{white}{#1}}
+\newcommand\emo@linebox[1]{%
+    \fcolorbox{emo@canary@frameouter}{emo@canary@background}{#1}}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1121,11 +1222,14 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{checkwidth}
-% |\lingchi| and |\YHWH| rely on |xspace| to avoid (ugly) trailing backslash
-% characters. But that makes both macros fundamentally context-sensitive. To
-% ensure meaningful test results, we must fix the context too. |\checkwidth|
-% does that by following the macro output with a period.
+% \begin{macro}{\checkwidth}
+% Before version 0.5, |\lingchi| and |\YHWH| relied on |xspace| to avoid any
+% trailing backslashes. Now that all three user macros share the same code,
+% implementing that feature would require another hook. So I dropped it. Alas,
+% before version 0.5, the presence of |xspace| meant that both macros were
+% context-sensitive. To ensure meaningful test results, |\checkwidth| fixed the
+% context by following macro output with a period. The period remains even if
+% |xspace| does not.
 %
 % Even though |\checkwidth| only tests three macros and two of them take no
 % arguments, the test macro still needs five arguments to cover all variability:
@@ -1141,17 +1245,21 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 %    \begin{macrocode}
 \newcommand\checkwidth[5]{%
     \sbox\emo@canary@actual{#2.}%
-    \ifx\emo@backend\emo@use@unicode%
-        \sbox\emo@canary@expected{\begingroup #4\endgroup.}%
-    \else%
-    \ifx\emo@backend\emo@use@font%
+    \ifemo@use@font%
         \sbox\emo@canary@expected{%
-            \begingroup\csname#3\endcsname #4\endgroup.}%
+            \begingroup\csname emo@font@#3\endcsname #4\endgroup.}%
+    \else%
+    \ifemo@use@unicode%
+        \sbox\emo@canary@expected{\begingroup #4\endgroup.}%
     \else%
         \sbox\emo@canary@expected{%
             \raisebox{-0.2ex}{%
                 \includegraphics[height=1em]{emo-graphics/emo-#5}}.}%
     \fi%
+    \fi%
+    \ifemo@verbose@canary%
+        \fbox{\usebox{\emo@canary@actual}}\space%
+        \fbox{\usebox{\emo@canary@expected}}\space%
     \fi%
     \def\macroname{\texttt{\char`\\#1}}%
     \ifdim\wd\emo@canary@actual=\wd\emo@canary@expected%
@@ -1200,9 +1308,10 @@ if (IfCondition(T_CS('\ifemo@extra'))) {
 \begin{document}
 \Huge
 \enginename: {\Large Width of
-\checkwidth{emo}{\emo{robot}}{emo@font}{\char"1F916}{robot},
-\checkwidth{lingchi}{\lingchi}{emo@chinese}{\char"51CC\char"9072}{lingchi},
-\checkwidth{YHWH}{\YHWH}{emo@hebrew}{\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}}
+\checkwidth{emo}{\emo{robot}}{emoji}{\char"1F916}{robot},
+\checkwidth{lingchi}{\lingchi}{chinese}{\char"51CC\char"9072}{lingchi},
+\checkwidth{YHWH}{\YHWH}{hebrew}{%
+    \csname textdir\endcsname TRT\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}}
 \vspace{1ex}\par
 %    \end{macrocode}
 %

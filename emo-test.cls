@@ -12,7 +12,11 @@
 %% <https://github.com/apparebit/emo>
 %% 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{emo-test}[2023/05/01 Testing emo]
+\ProvidesClass{emo-test}[2023/05/01 v0.5 Testing emo]
+\newif\ifemo@verbose@canary\emo@verbose@canaryfalse
+\DeclareOption{verbose}{\emo@verbose@canarytrue}
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{standalone}}
+\ProcessOptions\relax
 \LoadClass[border=10pt, varwidth=6in]{standalone}
 \RequirePackage[extra]{emo}
 \RequirePackage{iftex}
@@ -44,8 +48,10 @@
 \setlength{\fboxrule}{0.5pt}
 \setlength{\fboxsep}{0pt}
 \newcommand\emo@nobox[1]{#1}
-\newcommand\emo@wordbox[1]{\fcolorbox{emo@canary@frameinner}{white}{#1}}
-\newcommand\emo@linebox[1]{\fcolorbox{emo@canary@frameouter}{emo@canary@background}{#1}}
+\newcommand\emo@wordbox[1]{%
+    \fcolorbox{emo@canary@frameinner}{white}{#1}}
+\newcommand\emo@linebox[1]{%
+    \fcolorbox{emo@canary@frameouter}{emo@canary@background}{#1}}
 \def\@sampletext#1{%
     \emo@linebox{%
         #1{It's} #1{\lingchi}:
@@ -61,17 +67,21 @@
 \newsavebox{\emo@canary@expected}
 \newcommand\checkwidth[5]{%
     \sbox\emo@canary@actual{#2.}%
-    \ifx\emo@backend\emo@use@unicode%
-        \sbox\emo@canary@expected{\begingroup #4\endgroup.}%
-    \else%
-    \ifx\emo@backend\emo@use@font%
+    \ifemo@use@font%
         \sbox\emo@canary@expected{%
-            \begingroup\csname#3\endcsname #4\endgroup.}%
+            \begingroup\csname emo@font@#3\endcsname #4\endgroup.}%
+    \else%
+    \ifemo@use@unicode%
+        \sbox\emo@canary@expected{\begingroup #4\endgroup.}%
     \else%
         \sbox\emo@canary@expected{%
             \raisebox{-0.2ex}{%
                 \includegraphics[height=1em]{emo-graphics/emo-#5}}.}%
     \fi%
+    \fi%
+    \ifemo@verbose@canary%
+        \fbox{\usebox{\emo@canary@actual}}\space%
+        \fbox{\usebox{\emo@canary@expected}}\space%
     \fi%
     \def\macroname{\texttt{\char`\\#1}}%
     \ifdim\wd\emo@canary@actual=\wd\emo@canary@expected%
