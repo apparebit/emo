@@ -22,9 +22,10 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+from textwrap import dedent
 from typing import (
     Any, Dict, Iterable, KeysView, List, Mapping,
-    NoReturn, Optional, TextIO, Tuple, Union
+    NoReturn, Optional, Set, TextIO, Tuple, Union
 )
 from urllib.request import urlopen
 
@@ -66,34 +67,25 @@ class Logger:
 logger = Logger()
 
 # --------------------------------------------------------------------------------------
-# Build a self-contained `demo.html`
+# Inline style sheets
 
 STYLE_LINK = re.compile(
-    f'<link rel="stylesheet" href="(?P<sheet>[^"]+)" type="text/css">'
+    r"""
+    <link[ ]+
+    (rel=["']stylesheet["'][ ]+)?
+    href=["'](?P<sheet>[^"']+)["'][ ]+
+    (rel=["']stylesheet["'][ ]+)?
+    type=["']text/css["']
+    >
+    """,
+    re.VERBOSE
 )
 
-def make_demo():
-    # Write extra styles to file.
-    logger.info('Writing auxiliary style sheet "demo.css"')
-    with open('demo.css', mode='w', encoding='utf8') as file:
-        file.write("""
-:root {
-    font-size: 300%;
-}
-        """)
-
-    # Convert to HTML and read in result.
-    logger.info('Converting LaTeX source in "demo.tex" to HTML in "demo.tmp.html"')
-    subprocess.run([
-        'latexmlc',
-        '--css=demo.css',
-        '--destination=demo.tmp.html',
-        'demo.tex']
-    )
-    with open('demo.tmp.html', mode='r', encoding='utf8') as file:
+def inline_style_sheets(markup: Path) -> None:
+    logger.info(f'Inlining style sheets for "{markup}"')
+    with open(markup, mode='r', encoding='utf8') as file:
         content = file.read()
 
-    # Find all links to style sheets and replace them with CSS content.
     style_sheets = []
     fragments = []
 
@@ -116,14 +108,13 @@ def make_demo():
     fragments.append(content[last_index:])
 
     # Write result and clean up.
-    logger.info(f'Writing self-contained HTML document "demo.html"')
-    with open('demo.html', mode='w', encoding='utf8') as file:
+    tmp_file = markup.with_suffix('.tmp.html')
+    logger.info(f'Writing self-contained "{tmp_file}"')
+    with open(tmp_file, mode='w', encoding='utf8') as file:
         for fragment in fragments:
             file.write(fragment)
 
-    os.unlink('demo.tmp.html')
-    for style_sheet in style_sheets:
-        os.unlink(style_sheet)
+    tmp_file.replace(markup)
 
 # --------------------------------------------------------------------------------------
 # Build an archive for release
@@ -212,7 +203,7 @@ def make_release() -> None:
 # --------------------------------------------------------------------------------------
 # Normalize emoji names
 
-PUNCTUATION = re.compile(r"""["'’“”&!(),:]""")
+PUNCTUATION = re.compile(r"""["'’“”&!(),.:]""")
 SEPARATORS = re.compile(r'[ _\-]+')
 
 # The list of name overrides.
@@ -265,6 +256,34 @@ RENAMING = {
     'see-no-evil-monkey': 'see-no-evil',
     'speak-no-evil-monkey': 'speak-no-evil',
 }
+
+# The sets of hair and skin modifiers.
+HAIR_MODIFIERS = {
+    'red-hair',
+    'curly-hair',
+    'white-hair',
+    'bald',
+}
+
+SKIN_MODIFIERS = {
+    'darkest',
+    'darker',
+    'medium',
+    'lighter',
+    'lightest',
+}
+
+# Regex for names of emoji with explicit gender, hair, or skin tone.
+GENDER_HAIR_SKIN = re.compile(rf"""
+    (\A|[^a-z])
+    (
+        {"|".join(HAIR_MODIFIERS)}
+        | {"|".join(SKIN_MODIFIERS)}
+        | man | men
+        | woman | women
+    )
+    (\Z|[^a-z])
+""", re.VERBOSE)
 
 def to_name(value: str) -> str:
     """Turn the given string as an emoji name."""
@@ -356,6 +375,34 @@ class Status(str, Enum):
 
 
 # --------------------------------------------------------------------------------------
+# Define LaTeX commands for emoji table
+
+class LatexCommand:
+    @staticmethod
+    def ifextra() -> str:
+        return '\\ifEmojiExtra'
+
+    @staticmethod
+    def begin_group(group: str) -> str:
+        return f'\\EmojiBeginGroup{{{group}}}'
+
+    @staticmethod
+    def begin_subgroup(group: str, subgroup: str) -> str:
+        return f'\\EmojiBeginSubgroup{{{group}}}{{{subgroup}}}'
+
+    @staticmethod
+    def define(name: str, codepoints: str) -> str:
+        return f'\\DefineEmoji{{{name}}}{{{codepoints}}}'
+
+    @staticmethod
+    def end_subgroup(group: str, subgroup: str) -> str:
+        return f'\\EmojiEndSubgroup{{{group}}}{{{subgroup}}}'
+
+    @staticmethod
+    def end_group(group: str) -> str:
+        return f'\\EmojiEndGroup{{{group}}}'
+
+# --------------------------------------------------------------------------------------
 # Define emoji descriptor
 
 @dataclass(frozen=True, order=True)
@@ -414,6 +461,10 @@ class Emoji:
         return self.status is Status.FULLY_QUALIFIED
 
     @property
+    def is_diverse(self) -> bool:
+        return GENDER_HAIR_SKIN.search(self.name) is not None
+
+    @property
     def unicode(self) -> str:
         return ' '.join(f'U+{cp:04X}' for cp in self.codepoints)
 
@@ -445,18 +496,22 @@ class Emoji:
 
     @property
     def latex_table_entry(self) -> str:
-        if self.has_compound_name:
-            prefix = f'\expandafter\def\csname emo@emoji@{self.name}\endcsname'
-        else:
-            prefix = f'\def\emo@emoji@{self.name}'
-
-        return f'{prefix}{{{str(self)}}}'
+        # The Unicode codepoints of the keycap emoji for hash #, star *, and
+        # the digits 0 through 9 start with the plain ASCII codepoint followed
+        # by the U+FE0F U+20E3 emoji modifiers. Since TeX is not aware of emoji
+        # modifiers, the hash # for keycap-hash trips it up. In that one case,
+        # we use \char instead.
+        return LatexCommand.define(
+            self.name,
+            self.latex_chars if self.name == 'keycap-hash' else str(self)
+        )
 
 
 # --------------------------------------------------------------------------------------
 # Parse Unicode TR-51's `emoji-test.txt`
 
 NameTable = Mapping[str, Emoji]
+CodepointSet = Set[Tuple[int, ...]]
 CodepointTable = Mapping[Tuple[int, ...], Emoji]
 SubgroupTable = Mapping[str, Tuple[Emoji, ...]]
 GroupTable = Mapping[str, SubgroupTable]
@@ -691,6 +746,20 @@ class Registry:
             raise KeyError(f'selector "{selector}" names non-existent subgroup')
         return self.subgroup(group, subgroup)
 
+    def non_diverse_people(self) -> List[Emoji]:
+        """
+        Return a list of emoji from the People & Body group that do not specify
+        the gender, hair, or skin tone.
+        """
+        all_emoji: List[Emoji] = list()
+
+        for subgroup in self.subgroup_names('people-and-body'):
+            for emoji in self.subgroup('people-and-body', subgroup):
+                if not emoji.is_diverse:
+                    all_emoji.append(emoji)
+
+        return all_emoji
+
     def select(self, *selectors: str) -> List[Emoji]:
         """Get the emoji matching the given selectors."""
         selection: List[Emoji] = list()
@@ -701,6 +770,11 @@ class Registry:
                 for group in self.group_names():
                     for subgroup in self.subgroup_names(group):
                         selection.extend(self.subgroup(group, subgroup))
+                continue
+
+            # 'NONDIVERSE' -- people & body without gender, hair, or skin color
+            if selector == 'NONDIVERSE':
+                selection.extend(self.non_diverse_people())
                 continue
 
             # group::subgroup -- all emoji in the subgroup
@@ -724,6 +798,104 @@ class Registry:
             raise KeyError(f'selector "{selector}" names neither emoji nor group')
 
         return selection
+
+    def _is_subgroup_included(
+        self, group: str, subgroup: str, selection: CodepointSet
+    ) -> bool:
+        """
+        Determine whether any of the emoji in the named subgroup is part of the
+        selection.
+        """
+        for emoji in self.subgroup(group, subgroup):
+            if emoji.codepoints in selection:
+                return True
+        return False
+
+    def _subgroup_inclusions(
+            self, group: str, selection: CodepointSet
+        ) -> Dict[str, bool]:
+        """
+        Compute the map from subgroup names to flag for whether a subgroup emoji
+        is part of the selection.
+        """
+        return {
+            subgroup: self._is_subgroup_included(group, subgroup, selection)
+            for subgroup in self.subgroup_names(group)
+        }
+
+    def write_latex_table(
+        self, emoji_selection: Set[Emoji], options: Any
+    ) -> List[Emoji]:
+        """
+        Write the emoji table for the given collection of emoji while preserving
+        Unicode display order and grouping.
+        """
+        codepoint_selection = { emoji.codepoints for emoji in emoji_selection }
+        all_emoji: List[Emoji] = list()
+
+        tmp_table = (
+            os.devnull if options.dry_run
+            else options.latex_table.with_suffix('.latest.def')
+        )
+        with open(tmp_table, mode='w', encoding='utf8') as file:
+            def write(text: str) -> None:
+                if not options.dry_run:
+                    file.write(text)
+
+            today = datetime.today().strftime('%Y-%m-%d')
+            write(f'\\ProvidesFile{{emo.def}}[{today} v1.0 emo•ji table]\n')
+
+            for group in self.group_names():
+                include = self._subgroup_inclusions(group, codepoint_selection)
+                if not any(include.values()):
+                    continue
+
+                write('\n\n')
+                write(LatexCommand.begin_group(group))
+                write('\n')
+                is_first = True
+
+                for subgroup in self.subgroup_names(group):
+                    if not include[subgroup]:
+                        continue
+
+                    if is_first:
+                        is_first = False
+                    else:
+                        write('\n')
+
+                    write(LatexCommand.begin_subgroup(group, subgroup))
+                    write('\n')
+                    for emoji in self.subgroup(group, subgroup):
+                        if not emoji.codepoints in codepoint_selection:
+                            continue
+
+                        all_emoji.append(emoji)
+                        write(emoji.latex_table_entry)
+                        write('\n')
+
+                    write(LatexCommand.end_subgroup(group, subgroup))
+                    write('\n')
+
+                write(LatexCommand.end_group(group))
+                write('\n')
+
+            write(
+                dedent(f"""
+                    {LatexCommand.ifextra()}
+                    {LatexCommand.begin_group('extra')}
+                    {LatexCommand.begin_subgroup('extra', 'extra')}
+                    {LatexCommand.define('lingchi', '凌遲')}
+                    {LatexCommand.define('YHWH', 'יהוה')}
+                    {LatexCommand.end_subgroup('extra', 'extra')}
+                    {LatexCommand.end_group('extra')}
+                    \\fi
+                """)
+            )
+
+        if not options.dry_run:
+            tmp_table.replace(options.latex_table)
+        return all_emoji
 
     def dump(self, file: Optional[TextIO] = None) -> None:
         """Dump the registry contents by groups and subgroups."""
@@ -980,11 +1152,6 @@ def create_parser() -> ArgumentParser:
         help='show group, emoji, as well as special names and exit'
     )
     group.add_argument(
-        '--make-demo',
-        action='store_true',
-        help='make the demo document and exit',
-    )
-    group.add_argument(
         '-r', '--make-release',
         action='store_true',
         help='make a release and exit',
@@ -1058,33 +1225,6 @@ def create_inventory(registry: Registry, options: Any) -> List[Emoji]:
     return inventory
 
 # --------------------------------------------------------------------------------------
-# Write emoji table
-
-def write_emoji_table(
-    requested_emoji: List[Emoji], existing_emoji: List[Emoji], options: Any
-) -> List[Emoji]:
-    all_emoji = list(set(requested_emoji) | set(existing_emoji))
-    all_emoji.sort()
-
-    tmp_table = options.latex_table.with_suffix('.latest.def')
-    if not options.dry_run:
-        with open(tmp_table, mode='w', encoding='utf8') as file:
-            today = datetime.today().strftime('%Y-%m-%d')
-            file.write(f'\\ProvidesFile{{emo.def}}[{today}]\n')
-            for emoji in all_emoji:
-                file.write(emoji.latex_table_entry)
-                file.write('\n')
-            file.write("""
-\\ifemo@extra
-\\def\\emo@emoji@lingchi{凌遲}
-\\def\\emo@emoji@YHWH{\\begingroup\\textdir TRT יהוה\\endgroup}
-\\fi
-""")
-        tmp_table.replace(options.latex_table)
-
-    return all_emoji
-
-# --------------------------------------------------------------------------------------
 # Run this script
 
 def main() -> None:
@@ -1093,13 +1233,10 @@ def main() -> None:
         options = create_parser().parse_args()
 
         # Create release.
-        if (options.make_release or options.make_demo) and options.dry_run:
+        if options.make_release and options.dry_run:
             raise ValueError('Unable to dry run selected build function')
         elif options.make_release:
             make_release()
-            return
-        elif options.make_demo:
-            make_demo()
             return
 
         # Populate registry, maybe list names.
@@ -1127,8 +1264,10 @@ def main() -> None:
             for emoji in requested_emoji:
                 convert(emoji, options.verbose)
 
-        # Write the emoji table for all emoji.
-        all_emoji = write_emoji_table(requested_emoji, existing_emoji, options)
+        # Write emoji table with all emoji in Unicode display order.
+        all_emoji = registry.write_latex_table(
+            set(requested_emoji) | set(existing_emoji), options
+        )
 
         if options.verbose:
             logger.info('Supported emoji: ' + ' '.join(e.display for e in all_emoji))
