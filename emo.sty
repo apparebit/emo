@@ -13,12 +13,12 @@
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo}
-    [2023/05/01 v0.5 emo•ji for all (LaTeX engines)]
-\newif\ifemo@extra\emo@extrafalse
-\newif\ifemo@indexing\emo@indexingfalse
-\newif\ifemo@debug\emo@debugfalse
-\DeclareOption{extra}{\emo@extratrue}
-\DeclareOption{index}{\emo@indexingtrue}
+    [2023/99/99 v1.0 emo•ji for all (LaTeX engines)]
+\newif\ifEmojiExtra
+\newif\ifemo@index
+\newif\ifemo@debug
+\DeclareOption{extra}{\EmojiExtratrue}
+\DeclareOption{index}{\emo@indextrue}
 \DeclareOption{debug}{\emo@debugtrue}
 \ProcessOptions\relax
 \RequirePackage[utf8]{inputenc}
@@ -27,79 +27,90 @@
 \newif\ifemo@use@pdf
 \RequirePackage{iftex}
 \ifdefined\HCode
-    \emo@use@unicodetrue
+\ifluatex\else
+\PackageError{emo}{%
+    LuaTeX required for TeX4ht converting LaTeX to HTML.\MessageBreak
+    You may also see ``Missing character'' messages or\MessageBreak
+    ``Unicode character ... not set up'' errors.\MessageBreak
+    To fix, please pass the -l or --lua option to make4ht tool}{%
+    Run TeX4ht with LuaTeX by passing -l or --lua option to make4ht}
+\fi
+\emo@use@unicodetrue
 \else
 \ifluatex
-    \emo@use@unicodetrue
-    \emo@use@fonttrue
+\emo@use@unicodetrue
+\emo@use@fonttrue
 \else
-    \emo@use@pdftrue
+\emo@use@pdftrue
 \fi
-\fi
-\RequirePackage{xcolor}
-\ifemo@indexing
-    \RequirePackage{index}
 \fi
 \ifemo@use@font
-    \RequirePackage{fontspec}
+\RequirePackage{fontspec}
+\fi
+\RequirePackage{xcolor}
+\ifemo@index
+\RequirePackage{index}
 \fi
 \ifemo@use@pdf
-    \RequirePackage{graphicx}
+\RequirePackage{graphicx}
 \fi
+\def\EmojiBeginGroup#1{}
+\def\EmojiBeginSubgroup#1#2{}
+\def\DefineEmoji#1#2{%
+    \expandafter\def\csname emo@emoji@#1\endcsname{#2}}
+\def\EmojiEndSubgroup#1#2{}
+\def\EmojiEndGroup#1{}
 \input{emo.def}
 \definecolor{emo@error@fg}{rgb}{1,1,1}
 \definecolor{emo@error@bg}{rgb}{.6824,.0863,.0863}
 \def\emo@error#1{%
     \colorbox{emo@error@bg}{%
         \textcolor{emo@error@fg}{%
-            \textsf{Bad} \texttt{\textbackslash emo\{#1\}}%
-        }%
-    }%
-}
+            \textsf{Bad} \texttt{\char`\\emo\{#1\}}}}}
 \def\emo@ifdef#1#2{%
     \ifcsname emo@emoji@#1\endcsname#2\else%
         \PackageWarning{emo}{Unknown emoji name in `\string\emo{#1}'}%
         \emo@error{#1}%
-    \fi%
-}
+    \fi}
 \NewHook{emo/render/before}
 \NewHook{emo/render/emoji}
-\ifemo@extra
+\ifEmojiExtra
 \NewHook{emo/render/chinese}
 \NewHook{emo/render/hebrew}
 \fi
 \NewHook{emo/render/content}
 \NewReversedHook{emo/render/after}
-\def\emo@makecommand#1{%
-    \noexpand\def\noexpand\emo@key{##1}%
-    \noexpand\emo@ifdef{##1}{%
-        \noexpand\UseHook{emo/render/before}%
-        \noexpand\def\noexpand\emo@value{%
-            \noexpand\begingroup%
-            \noexpand#1%
-            \noexpand\UseHook{emo/render/content}%
-            \noexpand\endgroup%
-        }%
-        \noexpand\UseHook{emo/render/after}%
-        \noexpand\emo@value%
-    }%
-}
-\edef\emo#1{\emo@makecommand{\UseHook{emo/render/emoji}}}
-\ifemo@extra
-\edef\@lingchi#1{\emo@makecommand{\UseHook{emo/render/chinese}}}
-\edef\@YHWH#1{\emo@makecommand{\UseHook{emo/render/hebrew}}}
-\def\lingchi{\@lingchi{lingchi}}
-\def\YHWH{\@YHWH{YHWH}}
+
+\def\emo@makecommand#1#2{
+    \newcommand*{#1}[1]{%
+        \def\emo@command{#1}%
+        \def\emo@key{##1}%
+        \emo@ifdef{##1}{%
+            \UseHook{emo/render/before}%
+            \def\emo@value{%
+                \begingroup%
+                #2%
+                \UseHook{emo/render/content}%
+                \endgroup}%
+            \UseHook{emo/render/after}%
+            \emo@value}}}
+\emo@makecommand\emo{\UseHook{emo/render/emoji}}
+\ifEmojiExtra
+\emo@makecommand\emo@lingchi{\UseHook{emo/render/chinese}}
+\emo@makecommand\emo@YHWH{\UseHook{emo/render/hebrew}}
+\newcommand*{\lingchi}{\emo@lingchi{lingchi}}
+\newcommand*{\YHWH}{\emo@YHWH{YHWH}}
 \fi
-\ifemo@indexing
+\ifemo@index
 \newindex{emo}{edx}{end}{Emoji Index}
-\def\emo@index#1{\index[emo]{#1}}
-\AddToHook{emo/render/before}{\expandafter\emo@index\expandafter{\emo@key}}
+\def\emo@emit@index#1{\index[emo]{#1}}
+\AddToHook{emo/render/before}{%
+    \expandafter\emo@emit@index\expandafter{\emo@key}}
 \fi
 \ifemo@use@font
 \newfontface\emo@font@emoji[Renderer=Harfbuzz]{NotoColorEmoji.ttf}
 \AddToHook{emo/render/emoji}{\emo@font@emoji}
-\ifemo@extra
+\ifEmojiExtra
 \newfontface\emo@font@chinese{emo-lingchi.ttf}
 \newfontface\emo@font@hebrew{LinLibertine_R.otf}
 \AddToHook{emo/render/chinese}{\emo@font@chinese}
@@ -111,14 +122,13 @@
 \fi
 \ifemo@use@pdf
 \AddToHook{emo/render/content}{%
-    \raisebox{-0.2ex}{\includegraphics[height=1em]{emo-graphics/emo-\emo@key}}%
-}
+    \raisebox{-0.2ex}{%
+        \includegraphics[height=1em]{emo-graphics/emo-\emo@key}}}
 \fi
 \ifemo@debug
 \AddToHook{emo/render/after}{%
     \let\emo@realvalue\emo@value%
-    \def\emo@value{\fbox{\emo@realvalue}}%
-}
+    \def\emo@value{\fbox{\emo@realvalue}}}
 \fi
 \endinput
 %%

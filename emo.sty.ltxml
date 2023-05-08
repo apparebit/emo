@@ -6,16 +6,22 @@ use warnings;
 use LaTeXML::Package;
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/05/01 v0.5 emo•ji for all (LaTeX engines)]
-\newif\ifemo@extra\emo@extrafalse
+    [2023/99/99 v1.0 emo•ji for all (LaTeX engines)]
+\newif\ifEmojiExtra
 EOTeX
-DeclareOption('extra', '\emo@extratrue');
+DeclareOption('extra', '\EmojiExtratrue');
 DeclareOption('index', '');
 DeclareOption('debug', '');
 ProcessOptions();
+DefMacro('\EmojiBeginGroup{}', '');
+DefMacro('\EmojiBeginSubgroup{}{}', '');
+DefMacro('\DefineEmoji{}{}',
+    '\expandafter\def\csname emo@emoji@#1\endcsname{#2}');
+DefMacro('\EmojiEndSubgroup{}{}', '');
+DefMacro('\EmojiEndGroup{}', '');
 InputDefinitions('emo', type => 'def', noltxml => 1);
 DefMacro('\emo{}', '\csname emo@emoji@#1\endcsname');
-if (IfCondition(T_CS('\ifemo@extra'))) {
+if (IfCondition(T_CS('\ifEmojiExtra'))) {
     DefMacro('\lingchi', "\x{51cc}\x{9072}");
     DefMacro('\YHWH', "\x{05D9}\x{05D4}\x{05D5}\x{05D4}");
 }

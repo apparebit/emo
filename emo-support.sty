@@ -1,10 +1,10 @@
 %%
-%% This is file `emo-test.cls',
+%% This is file `emo-support.sty',
 %% generated with the docstrip utility.
 %%
 %% The original source files were:
 %%
-%% emo.dtx  (with options: `testing')
+%% emo.dtx  (with options: `support')
 %% 
 %% emo•ji for all (LaTeX engines)
 %% (C) Copyright 2023 by Robert Grimm
@@ -12,12 +12,10 @@
 %% <https://github.com/apparebit/emo>
 %% 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{emo-test}[2023/05/01 v0.5 Testing emo]
-\newif\ifemo@verbose@canary\emo@verbose@canaryfalse
+\ProvidesPackage{emo-support}[2023/99/99 v1.0 Test & document emo]
+\newif\ifemo@verbose@canary
 \DeclareOption{verbose}{\emo@verbose@canarytrue}
-\DeclareOption*{\PassOptionsToClass{\CurrentOption}{standalone}}
 \ProcessOptions\relax
-\LoadClass[border=10pt, varwidth=6in]{standalone}
 \RequirePackage[extra]{emo}
 \RequirePackage{iftex}
 \RequirePackage{xcolor}
@@ -38,7 +36,7 @@
 \ifpdftex
 \def\enginename{pdfTeX}
 \else
-\def\enginename{unknown engine}
+\def\enginename{\emph{unknown engine}}
 \fi
 \fi
 \fi
@@ -56,27 +54,24 @@
     \emo@linebox{%
         #1{It's} #1{\lingchi}:
         #1{Please}, #1{\YHWH}, #1{have} #1{mercy}
-        #1{\emo{pleading-face}}!%
-    }%
-    \vspace{1ex}%
-}
+        #1{\emo{pleading-face}}!}%
+    \vspace{1ex}}
 \newcommand*\sampletext{%
-    \@ifstar{\@sampletext{\emo@wordbox}}{\@sampletext{\emo@nobox}}%
-}
+    \@ifstar{\@sampletext{\emo@wordbox}}{\@sampletext{\emo@nobox}}}
 \newsavebox{\emo@canary@actual}
 \newsavebox{\emo@canary@expected}
 \newcommand\checkwidth[5]{%
-    \sbox\emo@canary@actual{#2.}%
+    \sbox\emo@canary@actual{#2}%
     \ifemo@use@font%
         \sbox\emo@canary@expected{%
-            \begingroup\csname emo@font@#3\endcsname #4\endgroup.}%
+            \begingroup\csname emo@font@#3\endcsname #4\endgroup}%
     \else%
     \ifemo@use@unicode%
-        \sbox\emo@canary@expected{\begingroup #4\endgroup.}%
+        \sbox\emo@canary@expected{\begingroup #4\endgroup}%
     \else%
         \sbox\emo@canary@expected{%
             \raisebox{-0.2ex}{%
-                \includegraphics[height=1em]{emo-graphics/emo-#5}}.}%
+                \includegraphics[height=1em]{emo-graphics/emo-#5}}}%
     \fi%
     \fi%
     \ifemo@verbose@canary%
@@ -90,10 +85,9 @@
         \edef\emo@actual{\the\wd\emo@canary@actual}%
         \edef\emo@expected{\the\wd\emo@canary@expected}%
         \mbox{\macroname{} \emo{cross-mark} \emo@actual{} \emo@expected}%
-    \fi%
-}
+    \fi}
 \setlength\parindent{0pt}
 \setlength{\parskip}{1ex}
 \endinput
 %%
-%% End of file `emo-test.cls'.
+%% End of file `emo-support.sty'.

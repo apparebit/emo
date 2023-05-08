@@ -11,14 +11,16 @@
 %% Released under LPPL v1.3c or later
 %% <https://github.com/apparebit/emo>
 %% 
-\documentclass{emo-test}
+\documentclass[border=10pt, varwidth=6in]{standalone}
+\usepackage{emo-support}
 \begin{document}
 \Huge
-\enginename: {\Large Width of
+\emo{keycap-hash} \enginename: {\Large Width of
 \checkwidth{emo}{\emo{robot}}{emoji}{\char"1F916}{robot},
 \checkwidth{lingchi}{\lingchi}{chinese}{\char"51CC\char"9072}{lingchi},
 \checkwidth{YHWH}{\YHWH}{hebrew}{%
-    \csname textdir\endcsname TRT\char"5D9\char"5D4\char"5D5\char"5D4}{YHWH}}
+    \csname textdir\endcsname TRT\char"5D9\char"5D4\char"5D5\char"5D4%
+}{YHWH}}
 \vspace{1ex}\par
 \sampletext*\par\sampletext
 \end{document}
