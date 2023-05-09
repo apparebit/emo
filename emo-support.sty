@@ -13,12 +13,11 @@
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo-support}[2023/99/99 v1.0 Test & document emo]
-\newif\ifemo@verbose@canary
-\DeclareOption{verbose}{\emo@verbose@canarytrue}
 \ProcessOptions\relax
-\RequirePackage[extra]{emo}
 \RequirePackage{iftex}
+\RequirePackage{multicol}
 \RequirePackage{xcolor}
+\RequirePackage[extra]{emo}
 \iftutex
 \RequirePackage{fontspec}
 \RequirePackage{libertinus}
@@ -58,6 +57,51 @@
     \vspace{1ex}}
 \newcommand*\sampletext{%
     \@ifstar{\@sampletext{\emo@wordbox}}{\@sampletext{\emo@nobox}}}
+\newcounter{group}
+\newcounter{subgroup}[group]
+\def\emo@subgrouprule{\rule{\linewidth}{1pt}\par}
+\def\emo@subgroupstyle#1{%
+    \begin{minipage}{\linewidth}
+        \emo@subgrouprule\par
+        \rmfamily\textsc{#1}\vspace{-1.0ex}\par
+        \emo@subgrouprule
+    \end{minipage}}
+\newcommand{\group}{%
+    \@startsection{group}{1}{0pt}%
+        {-3ex plus -1ex minus -0.2ex}%
+        {3ex plus 1ex minus 0.2ex}%
+        {\centering\rmfamily\Large\bfseries\itshape}}
+\newcommand{\subgroup}{%
+    \@startsection{subgroup}{2}{0pt}%
+        {-3.5ex plus -1.0ex minus -0.2ex}%
+        {2ex plus 0.5ex minus 0.2ex}%
+        {\emo@subgroupstyle}}
+\def\emo@dotfilla{%
+    \unskip\nobreak%
+    \leaders\hbox{\hskip 0.1ex.\hskip 0.1ex}%
+    \hskip 1em plus 1fill\relax}
+\def\emo@lineup#1#2{%
+    \noindent\raggedright%
+    \texttt{\hyphenchar\font=`\-#1}%
+    \emo@dotfilla#2\par}
+\def\emo@lineup@emoji#1#2{\emo@lineup{#1}{\emo{#1}}}
+\def\emo@lineup@extra#1#2{\emo@lineup{#1}{\csname#1\endcsname}}
+\def\emo@group@extra{extra}
+\newcommand{\listinventory}{
+    \begingroup
+    \setlength{\parskip}{0.3ex plus 0.2ex minus 0.1ex}
+    \let\DefineEmoji=\emo@lineup@emoji
+    \def\EmojiBeginGroup##1{%
+        \def\emo@group{##1}%
+        \ifx\emo@group\emo@group@extra%
+        \let\DefineEmoji=\emo@lineup@extra%
+        \fi%
+        \group*{##1}}
+    \def\EmojiBeginSubgroup##1##2{\subgroup*{##2}}
+    \begin{multicols}{3}
+    \input{emo.def}
+    \end{multicols}
+    \endgroup}
 \newsavebox{\emo@canary@actual}
 \newsavebox{\emo@canary@expected}
 \newcommand\checkwidth[5]{%
@@ -74,20 +118,17 @@
                 \includegraphics[height=1em]{emo-graphics/emo-#5}}}%
     \fi%
     \fi%
-    \ifemo@verbose@canary%
-        \fbox{\usebox{\emo@canary@actual}}\space%
-        \fbox{\usebox{\emo@canary@expected}}\space%
-    \fi%
-    \def\macroname{\texttt{\char`\\#1}}%
+    \mbox{%
+    \texttt{\char`\\#1}\space%
     \ifdim\wd\emo@canary@actual=\wd\emo@canary@expected%
-        \mbox{\macroname{} \emo{check-mark-button}}%
+        \emo{check-mark-button}%
     \else%
-        \edef\emo@actual{\the\wd\emo@canary@actual}%
-        \edef\emo@expected{\the\wd\emo@canary@expected}%
-        \mbox{\macroname{} \emo{cross-mark} \emo@actual{} \emo@expected}%
-    \fi}
-\setlength\parindent{0pt}
-\setlength{\parskip}{1ex}
+        \emo{cross-mark}%
+        \fbox{\usebox{\emo@canary@actual}}\space%
+        \the\wd\emo@canary@actual\space%
+        \fbox{\usebox{\emo@canary@expected}}\space%
+        \the\wd\emo@canary@expected%
+    \fi}}
 \endinput
 %%
 %% End of file `emo-support.sty'.

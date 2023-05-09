@@ -67,6 +67,8 @@
     \colorbox{emo@error@bg}{%
         \textcolor{emo@error@fg}{%
             \textsf{Bad} \texttt{\char`\\emo\{#1\}}}}}
+
+
 \def\emo@ifdef#1#2{%
     \ifcsname emo@emoji@#1\endcsname#2\else%
         \PackageWarning{emo}{Unknown emoji name in `\string\emo{#1}'}%
@@ -80,7 +82,6 @@
 \fi
 \NewHook{emo/render/content}
 \NewReversedHook{emo/render/after}
-
 \def\emo@makecommand#1#2{
     \newcommand*{#1}[1]{%
         \def\emo@command{#1}%
