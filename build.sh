@@ -1,13 +1,13 @@
 #!/bin/bash
 
 if [[ -z ${NOCOLOR} ]] && [ -t 2 ]; then
-    STUFF="\e[1m"
+    EXTRA="\e[1m"
     ERROR="\e[1;31m"
     WARN="\e[1;38;5;208m"
     INFO="\e[1;34m"
     RESET="\e[0m"
 else
-    STUFF=""
+    EXTRA=""
     ERROR=""
     WARN=""
     INFO=""
@@ -19,10 +19,20 @@ log() {
     printf "${STYLE}$1 $2 ${RESET}\n" >&2
 }
 
+log_help() {
+    log EXTRA "Invoke as \'./build.sh [<cmd>]\' with <cmd> one of these:"
+    log EXTRA "    test    -- run emo's cross-engine tests"
+    log EXTRA "    html    -- run emo's HTML conversions"
+    log EXTRA "    docs    -- build emo's documentation on pdfTeX"
+    log EXTRA "    all     -- execute test, html, and docs in that order (default)"
+    log EXTRA "    luadocs -- build emo's documentation on LuaTeX"
+    log EXTRA "    luaall  -- execute test, html, and luadocs in that order"
+}
+
 if [[ -z ${BASH} ]]; then
     log ERROR "It looks like you source'd this script; please run it instead"
-    log STUFF '$ chmod +x build.sh'
-    log STUFF '$ ./build.sh'
+    log EXTRA '$ chmod +x build.sh'
+    log EXTRA '$ ./build.sh'
     return 1
 fi
 
@@ -44,7 +54,7 @@ test() {
 }
 
 html() {
-    log INFO "Test with LaTeXML"
+    log INFO "Convert to HTML with LaTeXML"
     # LaTeXML: --includestyles handles emo-supprt package
     latexmlc --includestyles --dest=demo-latexml.html demo.tex
     if [ $? -ne 0 ]; then
@@ -56,7 +66,7 @@ html() {
     sed -i '' '/^<!--Generated on /d' ./demo-latexml.html
     sed -i '' '/^<footer class="ltx_page_footer">/{N;N;d;}' ./demo-latexml.html
 
-    log INFO "Test with TeX4ht"
+    log INFO "Convert to HTML with TeX4ht"
     # TeX4ht: -l is necessary for selecting LuaTeX engine
     make4ht -l -j demo-tex4ht demo.tex
     if [ $? -ne 0 ]; then
@@ -68,37 +78,42 @@ html() {
 }
 
 build-docs() {
-    log INFO "Build documentation"
-    lualatex -interaction=batchmode emo.dtx
+    log INFO "Build documentation with $1"
+    $1 -interaction=batchmode emo.dtx
     if [ $? -ne 0 ]; then
-        log ERROR "lualatex failed to compile 'emo.dtx'"
+        log ERROR "$1 failed to compile 'emo.dtx'"
         exit 1
     fi
 }
 
 docs() {
-    build-docs
+    build-docs "$1"
     log INFO "Make indices"
     makeindex -s gind.ist -o emo.ind emo.idx
     makeindex -s gglo.ist -o emo.gls emo.glo
-    build-docs
-    build-docs
+    build-docs "$1"
+    build-docs "$1"
 }
 
 target=${1:-all}
 case $target in
-    test )  test ;;
-    html )  html ;;
-    docs )  docs ;;
+    test    )  test ;;
+    html    )  html ;;
+    docs    )  docs pdflatex ;;
+    luadocs )  docs lualatex ;;
     all  )
         test
         html
-        docs
+        docs pdflatex
+        ;;
+    luaall  )
+        test
+        html
+        docs lualatex
         ;;
     *       )
         log ERROR "Unknown command \'${target}\'!"
-        log ERROR "Use \'test\', \'html\', \'docs\', or \'all\'."
-        log ERROR "Or just omit the argument."
+        log_help
         exit 1
         ;;
 esac
