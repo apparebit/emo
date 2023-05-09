@@ -306,10 +306,12 @@ TSWLatexianTemp*
 
 noto-emoji
 noto-emoji.zip
+noto-emoji-*.ttf
+twemoji.ttf
 LaTeXML.css
 ltx-article.css
-luatex-canary.*
-pdftex-canary.*
-xetex-canary.*
+lualatex-canary.*
+pdflatex-canary.*
+xelatex-canary.*
 emo
 emo-*.*.zip
