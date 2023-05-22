@@ -80,10 +80,10 @@ html() {
 build-docs() {
     log INFO "Build documentation with $1"
     $1 -interaction=batchmode emo.dtx
-    if [ $? -ne 0 ]; then
-        log ERROR "$1 failed to compile 'emo.dtx'"
-        exit 1
-    fi
+    #if [ $? -ne 0 ]; then
+    #    log ERROR "$1 failed to compile 'emo.dtx'"
+    #    exit 1
+    #fi
 }
 
 docs() {

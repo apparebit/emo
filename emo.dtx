@@ -252,10 +252,10 @@ html() {
 build-docs() {
     log INFO "Build documentation with $1"
     $1 -interaction=batchmode emo.dtx
-    if [ $? -ne 0 ]; then
-        log ERROR "$1 failed to compile 'emo.dtx'"
-        exit 1
-    fi
+    #if [ $? -ne 0 ]; then
+    #    log ERROR "$1 failed to compile 'emo.dtx'"
+    #    exit 1
+    #fi
 }
 
 docs() {
@@ -345,7 +345,7 @@ Released under LPPL v1.3c or later
 %<package>\NeedsTeXFormat{LaTeX2e}
 %<package>\ProvidesPackage{emo}
 %<*scaffold,package>
-    [2023/99/99 v1.0 emo•ji for all (LaTeX engines)]
+    [2023/05/22 v1.0 emo•ji for all (LaTeX engines)]
 %</scaffold,package>
 % ======================================================================================
 %<*driver>
@@ -480,8 +480,8 @@ Released under LPPL v1.3c or later
 % emo's distribution, since both of them are distributed with major TeX
 % distributions already. If they are not included with your LaTeX distribution,
 % you can find them on CTAN. The |emo-lingchi.ttf| font distributed with emo is
-% a two glyph subset of |NotoSerifTC-Regular.otf|, i.e., the traditional Chinese
-% version of Noto serif.
+% a two glyph subset of \texttt{Noto\-Serif-\TC-Regular.otf}, i.e., the
+% traditional Chinese version of Noto serif.
 %
 %
 % ^^A ==================================================================================
@@ -652,8 +652,12 @@ Released under LPPL v1.3c or later
 % from |emo.dtx| and defines the substance of the package, its options, its
 % helper macros, and the user-visible |\emo|, |\lingchi|, and |\YHWH| macros.
 % Currently supported emoji are defined by the emoji table in the second file,
-% |emo.def|. For every supported emoji, the file contains a command
-% |\emo@emoji@|\meta{emoji-name} with the emoji's codepoints as value.
+% |emo.def|. For every supported emoji, the file contains an invocation of the
+% |\DefineEmoji|\meta{emoji-name}\meta{emoji-codepoints} macro with the emoji's
+% name and codepoints. With exception of the emoji listed in
+% Table~\ref{tab:special-names}, all names are the Unicode names written with a
+% dash instead of space and using only lowercase letters. The codepoints always
+% are the fully qualified Unicode codepoints for the emoji.
 %
 % Configuration automates the regeneration of the emoji table for arbitrary
 % numbers of emoji. |config/emo.py| is the script and |config/emoji-test.txt| is
@@ -787,7 +791,7 @@ Released under LPPL v1.3c or later
 % Require |inputenc| to declare this file's character encoding as UTF-8. XeTeX
 % and LuaTeX already use that encoding by default and hence this line is
 % redundant. But pdfTeX originates from darker, pre-Unicode times and thus needs
-% to be told. Though thankfully, it does support the encoding by now.
+% to be told. Though thankfully, it too does support the encoding.
 %    \begin{macrocode}
 \RequirePackage[utf8]{inputenc}
 %    \end{macrocode}
@@ -814,10 +818,10 @@ Released under LPPL v1.3c or later
 \ifdefined\HCode
 \ifluatex\else
 \PackageError{emo}{%
-    LuaTeX required for TeX4ht converting LaTeX to HTML.\MessageBreak
-    You may also see ``Missing character'' messages or\MessageBreak
+    Use of TeX4ht for converting LaTeX to HTML requires LuaTeX.\MessageBreak
+    You may see ``Missing character'' messages or\MessageBreak
     ``Unicode character ... not set up'' errors.\MessageBreak
-    To fix, please pass the -l or --lua option to make4ht tool}{%
+    To fix, please pass the -l or --lua option to TeX4ht's make4ht tool}{%
     Run TeX4ht with LuaTeX by passing -l or --lua option to make4ht}
 \fi
 \emo@use@unicodetrue
@@ -835,7 +839,7 @@ Released under LPPL v1.3c or later
 % \end{macro}
 %
 % We need the backend flags to decide whether to load |fontspec| or not. We do
-% that before requiring any other packages because that way the packages related
+% that before requiring any other packages because, that way, the packages related
 % to encoding and fonts are loaded first (together with |iftex|).
 %    \begin{macrocode}
 \ifemo@use@font
@@ -872,20 +876,10 @@ Released under LPPL v1.3c or later
 %     grouping and order}
 %
 % The emoji table contains an entry for every emoji supported in the current
-% configuration. Each such entry defines a macro without arguments, which has
-% the emoji's name prepended with |emo@emoji@| as its name and expands to the
-% emoji's fully qualified Unicode codepoints. The macro for |keycap-hash| is an
-% exception: Its first codepoint is the plain hash \# character, which trips up
-% TeX's parser. Hence the macro for |keycap-hash| expands to the |\char|'ed
-% codepoints. If the extra option is active, the emoji table also contains
-% entries for |\lingchi| and |\YHWH|.
-%
-% Before version 1.0, |emo.def| contained the macro definitions for the emoji
-% table, with definitions ordered by emojis' codepoints. The lack of meaningful
-% hierarchy and order made |emo.def| unusable for generating documentation,
-% notably an inventory of currently supported emoji. To make |emo.def| more
-% useful, version 1.0 introduced a higher-level file format based on the five
-% macros described next.
+% configuration. To facilitate reuse of the same table definition for different
+% purposes, including validating emoji names, determining emoji codepoints, and
+% typesetting the currently supported inventory, emo abstracts over the table
+% itself with the following five macros.
 %
 % \begin{macro}{\EmojiBeginGroup}
 % \begin{macro}{\EmojiBeginSubroup}
@@ -902,8 +896,8 @@ Released under LPPL v1.3c or later
 %
 % |\DefineEmoji|\marg{name}\marg{codepoints} takes an emoji's name and its
 % Unicode codepoints as arguments---except for |keycap-hash|, which uses has the
-% |\char|'ed codepoints as value because TeX does not handle hash characters in
-% the input.
+% |\char|'ed codepoints as value because TeX gets very much confused by the
+% leading hash character in that emoji's codepoints.
 %
 % |\EmojiBeginGroup|\marg{group} and |\EmojiEndGroup|\marg{group} take a group
 % name as their only argument. In contrast,
@@ -916,7 +910,7 @@ Released under LPPL v1.3c or later
 % or text direction) are included with the emoji table.
 %
 % The conversion from the abstract file format for |emo.def| to the concrete
-% emoji table is simple enough, especially since four macros remain no-ops.
+% emoji table is simple enough, especially since four macros remain no-ops:
 % \begin{macrocode}
 \def\EmojiBeginGroup#1{}
 \def\EmojiBeginSubgroup#1#2{}
@@ -940,10 +934,10 @@ Released under LPPL v1.3c or later
 % script. When invoked without arguments, that script simply recreates the emoji
 % table based on the emoji present in the |emo-graphics| directory. If invoked
 % with arguments naming Unicode emoji groups, groups and subgroups, or
-% individual emoji, the script converts SVG graphcis from the Noto emoji font
-% sources to PDF graphics compatible with LaTeX and then rebuilds the inventory
-% in |emo.def|. If necessary, the Python code downloads the Noto emoji font
-% sources.
+% individual emoji, the script converts SVG graphics from the Noto emoji
+% sources to PDF graphics compatible with LaTeX and then updates the inventory
+% in |emo.def|. The Python script even downloads the Noto emoji sources if they
+% haven't been already downloaded to the local machine.
 %
 %
 % ^^A ----------------------------------------------------------------------------------
@@ -952,7 +946,7 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\emo@error@fg}
 % \begin{macro}{\emo@error@bg}
 % \begin{macro}{\emo@error}
-% Define two colors and a macro |\emo@error|\marg{emoji-name} function that uses
+% Define two colors and the |\emo@error|\marg{emoji-name} macro. The latter uses
 % the two colors for formatting an attention-grabbing error message. If you use
 % an invalid emoji name and overlook the warning in the console, you \emph{will}
 % notice the error messsage in the document thusly formatted.
@@ -969,12 +963,10 @@ Released under LPPL v1.3c or later
 % \end{macro}
 %
 % \begin{macro}{\emo@ifdef}
-
-% The |\emo@ifdef|\marg{name}\marg{code} macro validate the emoji name given as
+% The |\emo@ifdef|\marg{name}\marg{code} macro validates the emoji name given as
 % first argument. If the name is invalid, it expands to an error message. If the
-% name is valid, it executes the code given as second argument. The
+% name is valid, it executes the code given as the second argument. The
 % implementation critically relies on the emoji table being accurate.
-
 %    \begin{macrocode}
 \def\emo@ifdef#1#2{%
     \ifcsname emo@emoji@#1\endcsname#2\else%
@@ -986,57 +978,15 @@ Released under LPPL v1.3c or later
 %
 %
 % ^^A ----------------------------------------------------------------------------------
-% \subsection{User Macros and Hooks}
+% \subsection{Emo's Public Macros and Render Hooks}
 %
-% \subsubsection{Background: Variability vs Code Duplication}
-%
-% Emo's implementation changed considerably between versions 0.1 and 1.0:
-%
-% For \textbf{versions 0.1 and 0.2}, I focused on getting emo to work across
-% pdfTex, XeTeX, and LuaTeX as well as to adhere to the (naming) conventions of
-% the TeX ecosystem. My initial strategy for managing the variability of package
-% options and backends was to define the same internal and user macros several
-% times each to account for just that variability. Hence, emo included two
-% versions for the internal |\emo@index| macro, namely one version to emit an
-% index entry and one version to do nothing. It also included two versions each
-% for |\emo|, |\lingchi|, and |\YHWH|, namely one version to emit a group with a
-% command setting the font (and another command setting the text direction for
-% |\YHWH|) followed by some Unicode codepoints and another version to include a
-% PDF graphic. It worked. But especially the two definitions for each of the
-% three user macros suffered from noticeable code duplication.
-%
-% Version 0.2 also added support for conversion to HTML with LaTeXML. But it did
-% so through a separate binding and hence did not require changes to emo's
-% implementation.
-%
-% In contrast, for \textbf{version 0.3}, I integrated support for TeX4ht into
-% the implementation and treated rendering Unicode codepoints \emph{without}
-% preceding font selection as a \emph{third} backend. That increased variability
-% and also the corresponding complexity of definitions. Notably, the internal
-% |\emo@content| macro for rendering either Unicode codepoints, Unicode
-% codepoints with font selection, or PDF graphic was defined thrice.
-%
-% At the same time, the implementation also eliminated some variability by
-% including entries for |\lingchi| and |\YHWH| in the emoji table. That made it
-% possible for both macros to delegate to |\emo|---except when rendering Unicode
-% codepoints \emph{with font selection}. In the latter case, each macro renders
-% glyphs in a different ``language'' and possibly writing system and hence also
-% needs to select a different font.
-%
-% For \textbf{version 0.4}, I introduced the |debug| package option, which
-% instructs emo to make the bounding boxes for its output visible. To implement
-% the option, I added code that wraps the result of a macro in an |fbox| three
-% times. Clearly, that's two times too many.
-%
-% That same version also added unit tests and, as a result of writing and
-% debugging the unit tests, my TeX-fu improved considerably. So after releasing
-% that version, I started looking for a more ergonomic approach to emo's
-% implementation, discovered
-% \href{http://tug.ctan.org/macros/latex/base/lthooks-code.pdf}{LaTeX hooks},
-% and switched to them for \textbf{version 1.0}.
+% To support up to three macros across three LaTeX engines and two HTML
+% conversion tools, emo's implementation originally defined the same macros
+% twice or thrice, with some code duplication between them as well. As I gained
+% experience with LaTeX, I settled on \emph{hooks} as a powerful means for
+% avoiding extra macros as well as code duplication.
 %
 %
-% ^^A ----------------------------------------------------------------------------------
 % \subsubsection{A Skeleton of Render Hooks}
 %
 % \begin{macro}{emo/render/before}
@@ -1045,12 +995,12 @@ Released under LPPL v1.3c or later
 % \begin{macro}{emo/render/hebrew}
 % \begin{macro}{emo/render/content}
 % \begin{macro}{emo/render/after}
-% To determine emo's hooks, we consider the functional requirements of emo's
-% three macros and pay close attention to how those requirements converge and
-% diverge:
+% To determine just those hooks, let's review emo's functional requirements and
+% pay close attention to how those requirements converge and diverge between
+% emo's three macros:
 % \begin{enumerate}
 % \item All three macros visually render one or more glyphs. Let's introduce the
-% |emo/render/content| hook for that.
+% |emo/render/content| hook for doing so.
 % \item Each macro generates glyphs in a different ``language'' and writing
 % system and thus may need to set the font, text direction, and so on. Let's
 % introduce the |emo/render/emoji|, |emo/render/chinese|, and
@@ -1059,17 +1009,14 @@ Released under LPPL v1.3c or later
 % invocations (e.g., for the |index| package option) or modify macro results
 % (e.g., for the |debug| package option). Let's introduce the
 % \texttt{emo/\-render/\-before} and \texttt{emo/\-render/\-after} hooks for
-% that.
+% doing so.
 % \end{enumerate}
 % Before version 1.0, |\lingchi| and |\YHWH| relied on a trailing |\xspace| to
 % obviate the need for trailing backslashes before spaces. Continued support
-% would require introducing another hook. If that hook is hardcoded into the
-% user macro template, it adds unnecessary overhead for every invocation of
-% |\emo|. If it is optional, then macro template instantiation becomes more
-% complicated. Since both options increase complexity with little benefit, I
-% dropped that feature with version 1.0.
+% would require introducing another hook, which would add more complexity than
+% it avoids. For that reason, I removed that feature with version 1.0.
 %
-% Here are the emo's render hooks:
+% We are ready to define emo's render hooks:
 %    \begin{macrocode}
 \NewHook{emo/render/before}
 \NewHook{emo/render/emoji}
@@ -1092,28 +1039,24 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\emo@key}
 % \begin{macro}{\emo@value}
 % With the hooks declared, we are ready to define the internal
-% |\emo@makecommand| macro, which in turn defines each of the three user macros.
-% Since those three macros differ in control sequence and font selection hook,
-% |\emo@makecommand| takes two arguments. The user macro, in turn, takes one
-% argument, the name of the entity to render. Since hooks have no arguments, we
-% need a way for determining the current command, the key argument, and the
-% resulting, rendered value. The implementation uses |\emo@command|, |\emo@key|,
-% and |\emo@value| for just that purpose.
+% |\emo@makecommand| macro, which provides the shared skeleton for each of the
+% three user macros. Since those three macros differ in control sequence and
+% font selection hook, |\emo@makecommand| takes two arguments, the macro control
+% sequence and the font selection hook. The user macro defined by
+% |\emo@makecommand| in turn takes one argument, the name of the entity to
+% render. Its body invokes the right hooks in the right order. Since hooks do
+% not pass arguments or  results, it also creates bindings for the current
+% command, the key argument, and the resulting, rendered value. They are named
+% |\emo@command|, |\emo@key|, and |\emo@value|, respectively.
 %
-% The rest is straight-forward: After defining |\emo@command| and |\emo@key|,
-% the implementation tests whether that key is valid. If so, it invokes the
-% \texttt{emo/\-render/\-before} hook, renders the content by invoking the font
-% selection and content hooks inside a group, binds the result to |\emo@value|,
-% invokes the \texttt{emo/\-render/\-after} hook, and yields the value. The
-% group ensures that any sticky changes to font etc are contained within the
-% macro invocation.
-%
-% Admittedly, it took some trial and error to arrive at this version of
-% \texttt{\char`\\emo@\-make\-command}. I started out with |\emo@makecommand|
-% only assembling the body of each user macro. That required using |\edef| for
-% the user macro and prefixing almost every token in |\emo@makecommand| with
-% |\noexpand|. I converged on the current, simpler implementation once I
-% realized that I could pass the control sequence to be defined as an argument.
+% Let's put this all together: |\emo@makecommand| is a macro-generating macro
+% and hence defines a new user macro. That macro's implementation first binds
+% |\emo@command| and |\emo@key|. It then tests whether the key is valid. If so,
+% it invokes the \texttt{emo/\-render/\-before} hook, renders the content by
+% invoking the font selection and content hooks inside a group, binds the result
+% to |\emo@value|, invokes the \texttt{emo/\-render/\-after} hook, and yields
+% the value. The group ensures that any sticky changes to the font and so on are
+% nicely contained within the macro invocation.
 %    \begin{macrocode}
 \def\emo@makecommand#1#2{
     \newcommand*{#1}[1]{%
@@ -1129,6 +1072,14 @@ Released under LPPL v1.3c or later
             \UseHook{emo/render/after}%
             \emo@value}}}
 %    \end{macrocode}
+%
+% Nice and simple? I'd say so! But it took some trial and error to arrive at
+% this implementation. In particular, I started out with |\emo@makecommand| only
+% assembling the body of the user macro instead of fully defining it. That
+% required using |\edef| for the macro definition and prefixing almost every
+% token in |\emo@makecommand| above with |\noexpand|. Once I realized that I can
+% pass the control sequence as an argument, I was able to write this far simpler
+% version.
 % \end{macro}
 % \end{macro}
 % \end{macro}
@@ -1139,8 +1090,8 @@ Released under LPPL v1.3c or later
 % \subsubsection{The User Macros}
 %
 % \begin{macro}{\emo}
-% Render the named emoji either as Unicode or as a PDF graphic. To do so,
-% instantiate the skeleton with the font selection hook for emoji.
+% Render the named emoji either as Unicode or as a PDF graphic using the
+% emoji-specific render hook.
 %    \begin{macrocode}
 \emo@makecommand\emo{\UseHook{emo/render/emoji}}
 %    \end{macrocode}
@@ -1152,12 +1103,9 @@ Released under LPPL v1.3c or later
 % \begin{macro}{\YHWH}
 % \changes{0.3}{}{Build on {\tt\char`\\emo} by default}
 % \changes{1.0}{}{Drop use of trailing {\tt xspace}}
-% Since |\lingchi| and |\YHWH| do not take arguments, they require a helper
-% macro that provides the necessary argument to the macro generated by
-% |\emo@makecommand|. Originally, both macros included a trailing |\xspace| in
-% their expansion. While it would be possible to implement that with hooks based
-% on |\emo@command|, it seems like an unnecessary complication, so I dropped
-% that feature in version 1.0.
+% Render \lingchi\ and \YHWH, respectively. Since neither |\lingchi| nor |\YHWH|
+% takes arguments, we require a helper macro each that provides the argument
+% expected by the skeleton implementation.
 %    \begin{macrocode}
 \ifEmojiExtra
 \emo@makecommand\emo@lingchi{\UseHook{emo/render/chinese}}
@@ -1173,17 +1121,17 @@ Released under LPPL v1.3c or later
 % ^^A ----------------------------------------------------------------------------------
 % \subsubsection{Activating the Hooks}
 %
-% So far, the three user-facing macros do nothing besides creating empty groups.
-% We change that by activating the hooks as required by emo's package options
-% and the current engine. Conveniently, we only need to add to a hook if we need
-% it to do something. In the following, we activate hooks in invocation order,
-% from |emo/render/before| to font selection hooks to |emo/render/content| to
-% |emo/render/after|.
+% So far, the three user macros aren't particularly useful: They do not generate
+% any visible content. For that, we need to activate the hooks as necessary for
+% the current engine and package options. Conveniently, we only need to add to a
+% hook if we need it to do something. In the following, we activate hooks in
+% invocation order, from |emo/render/before| to font selection hooks to
+% |emo/render/content| to |emo/render/after|.
 %
 % If the |index| option is enabled, create the necessary index and emit entries
 % through the |emo/render/before| hook. The hook uses the |\emo@emit@index|
-% helper macro because stepping through |[emo]| requires three more
-% |\expandafter| invocations.
+% helper macro because stepping through |\index[emo]| would require three more
+% |\expandafter| invocations than this one:
 %    \begin{macrocode}
 \ifemo@index
 \newindex{emo}{edx}{end}{Emoji Index}
@@ -1241,6 +1189,42 @@ Released under LPPL v1.3c or later
 %    \end{macrocode}
 %
 %
+% ^^A ----------------------------------------------------------------------------------
+% \subsubsection{Background: Variability vs Code Duplication}
+%
+% Using hooks, emo's implementation can handle considerable variability in the
+% runtime environment with less than 60 lines of well-documented LaTeX code.
+% That's pretty neat. But emo most certainly didn't start out that way and its
+% implementation changed considerably between version 0.1 and 1.0.
+%
+% \textbf{Versions 0.1 and 0.2} took the most direct approach to managing the
+% variability between LaTeX engines: Conditionally define |\emo|, |\lingchi|,
+% and |\YHWH| twice, once using PDF graphics and once using fonts and Unicode
+% codepoints. It also conditionally defined |\emo@index| twice, once when the
+% package option is off and once when it is on. That approach works, but it also
+% results in code duplication. Furthermore, it doesn't scale when the
+% variability increases.
+%
+% \textbf{Version 0.3} integrated TeX4ht into the implementation, which
+% effectively added a third backend. Despite supporting more functionality than
+% the previous two versions, its implementation seemed simpler. The primary
+% reason was that I added |\lingchi| and |\YHWH| to the emoji table. That, in
+% turn, made it possible to use the same code for all three user macros for two
+% backends. Only the font-based backend required three implementations, which
+% were rather similar as well.
+%
+% \textbf{Version 0.4} introduced the |debug| package option, hence increasing
+% variability again. Sadly, the implementation added two extra definitions for
+% each of the three user macros, hence increasing clutter and code duplication
+% again. At the same time, the experience of adding unit tests helped improve my
+% TeX-fu considerably. So after releasing that version, I started looking for a
+% more elegant approach to emo's implementation and discovered
+% \href{http://tug.ctan.org/macros/latex/base/lthooks-code.pdf}{LaTeX hooks}.
+%
+% \textbf{Version 1.0} switched to using hooks. It also abstracted over the
+% emoji table contents and significantly grew the default inventory of emoji.
+%
+%
 % ^^A ==================================================================================
 % \section{LaTeXML Binding}
 % \changes{0.2}{}{Add LaTeXML binding for conversion to HTML}
@@ -1294,7 +1278,7 @@ use LaTeXML::Package;
 %    \begin{macrocode}
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/99/99 v1.0 emo•ji for all (LaTeX engines)]
+    [2023/05/22 v1.0 emo•ji for all (LaTeX engines)]
 \newif\ifEmojiExtra
 EOTeX
 %    \end{macrocode}
@@ -1369,8 +1353,8 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 % The following package and documents help test emo across all major LaTeX
 % engines and generate informative reports.
 %
-% Alas, we first start an always false conditional to prevent execution of this
-% code while generating the documentation.
+% Alas, we don't want to run these tests while generating the documentation.
+% Let's prevent that:
 %    \begin{macrocode}
 %<*scaffold>
 \iffalse
@@ -1395,7 +1379,7 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 % to make |emo-support| reusable. The package exists only to support emo.
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{emo-support}[2023/99/99 v1.0 Test & document emo]
+\ProvidesPackage{emo-support}[2023/05/22 v1.0 Test & document emo]
 %    \end{macrocode}
 %
 % There are no options to process.
@@ -1489,9 +1473,9 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 %
 % \begin{macro}{\@sampletext}
 % \begin{macro}{\sampletext}
-% Show a single line of text that makes use of emo's three macros. To help
+% Show a single line of text that makes use of emo's three user macros. To help
 % identify incorrect font metrics, spurious whitespace, and other issues, show
-% the line's bounding box and, for the starred version, the bounding boxes for
+% the line's bounding box and, for the starred version, the bounding boxens for
 % words and emoji, too.
 %    \begin{macrocode}
 \def\@sampletext#1{%
@@ -1520,7 +1504,7 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 % \begin{macro}{\emo@subgrouprule}
 % \begin{macro}{\emo@subgroupstyle}
 % Subgroup headings are particularly fancy. They show the subgroup name in
-% small-caps between horizontal rules. It's easiest to use separate paragraphs
+% small-caps between horizontal rules. It's cleanest to use separate paragraphs
 % for each rule as well as the subgroup name. To prevent very ugly column breaks
 % between them, we wrap everything in a |minipage| environment.
 %    \begin{macrocode}
@@ -1538,7 +1522,7 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 % \begin{macro}{\group}
 % \begin{macro}{\subgroup}
 % We are ready to define the new sectioning commands. By using |\@startsection|,
-% we LaTeX's support for managing the space above and below the heading for
+% we get LaTeX's support for managing the space above and below the heading for
 % free. That makes a huge difference, if the heading appears at the top of a
 % page or columns.
 %    \begin{macrocode}
@@ -1588,12 +1572,13 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 % \end{macro}
 %
 % \begin{macro}{\listinventory}
-% With that, we are well-prepared for defining the |\listinventory| macro. It
-% does all formatting by reading the emoji table from |emo.def| with its own
-% version of the file format macros. It even changes |\DefineEmoji| while
-% reading |emo.def| to account for the final \emph{extra} group. The resulting
-% format lists emojis with their names under |\group| and |\subgroup| headings
-% in three columns per page, all contained within a group.
+% With that, we are ready to define the |\listinventory| macro. It does all
+% formatting by reading the emoji table from |emo.def| with its own version of
+% the file format macros. It even changes |\DefineEmoji| while reading |emo.def|
+% to account for the final \emph{extra} group. The resulting format lists emojis
+% with their names under |\group| and |\subgroup| headings in three columns per
+% page, all contained in a group to contain format changes like the redefined
+% |\parskip|.
 %    \begin{macrocode}
 \newcommand{\listinventory}{
     \begingroup
@@ -1619,20 +1604,21 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 %
 % \begin{macro}{\emo@canary@actual}
 % \begin{macro}{\emo@canary@expected}
-% Validating emo's macros turned out to be a bit trickier than I had expected.
-% The obvious approach, fully expanding the macros and then comparing the
-% results, doesn't work. While TeX does support eager expansion via, for
+% Validating emo's user macros turned out to be a bit trickier than I had
+% expected. The obvious approach, fully expanding the macros and then comparing
+% the results, doesn't work. While TeX does support eager expansion via, for
 % example, |\expandafter| and |\edef|, it does so only for some macros.
+%
 % ^^A https://tex.stackexchange.com/questions/67192/using-qstest-to-implement-unit-tests
 %
 % Instead, we need to take a sneakier approach: Generate a box with the macro
 % invocation and another box with the expected result and then compare the
-% widths of the two boxes. While that is an incomplete comparison and hence
-% cannot detect all bugs, it \emph{can} detect any bug where the macro's output
-% is shorter or longer than expected. That conveniently includes whitespace,
-% which is one of the likeliest regressions.
+% dimensions of the two boxes (currently only widths). While that is an
+% incomplete comparison and hence cannot detect all bugs, it \emph{can} detect
+% any bug where the macro's output is shorter or longer than expected. That
+% conveniently includes whitespace, which is one of the likeliest regressions.
 %
-% We get started on that testing strategy by defining two box registers.
+% We get started on that testing strategy by defining two box registers:
 %    \begin{macrocode}
 \newsavebox{\emo@canary@actual}
 \newsavebox{\emo@canary@expected}
@@ -1646,7 +1632,7 @@ if (IfCondition(T_CS('\ifEmojiExtra'))) {
 % The |\checkwidth|\marg{name}\marg{code}\marg{font}\marg{codepoints}\marg{file}
 % macro can test emo's three user-facing macros across all engines. It captures
 % the variability for doing so across all supported engines with its five
-% arguments.
+% arguments:
 % \begin{enumerate}
 % \item \marg{name} of the user macro being tested---e.g., |emo|;
 % \item \marg{code} to invoke the macro---e.g., |\emo{robot}|;

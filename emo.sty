@@ -13,7 +13,7 @@
 %% 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{emo}
-    [2023/99/99 v1.0 emo•ji for all (LaTeX engines)]
+    [2023/05/22 v1.0 emo•ji for all (LaTeX engines)]
 \newif\ifEmojiExtra
 \newif\ifemo@index
 \newif\ifemo@debug
@@ -29,10 +29,10 @@
 \ifdefined\HCode
 \ifluatex\else
 \PackageError{emo}{%
-    LuaTeX required for TeX4ht converting LaTeX to HTML.\MessageBreak
-    You may also see ``Missing character'' messages or\MessageBreak
+    Use of TeX4ht for converting LaTeX to HTML requires LuaTeX.\MessageBreak
+    You may see ``Missing character'' messages or\MessageBreak
     ``Unicode character ... not set up'' errors.\MessageBreak
-    To fix, please pass the -l or --lua option to make4ht tool}{%
+    To fix, please pass the -l or --lua option to TeX4ht's make4ht tool}{%
     Run TeX4ht with LuaTeX by passing -l or --lua option to make4ht}
 \fi
 \emo@use@unicodetrue
@@ -67,8 +67,6 @@
     \colorbox{emo@error@bg}{%
         \textcolor{emo@error@fg}{%
             \textsf{Bad} \texttt{\char`\\emo\{#1\}}}}}
-
-
 \def\emo@ifdef#1#2{%
     \ifcsname emo@emoji@#1\endcsname#2\else%
         \PackageWarning{emo}{Unknown emoji name in `\string\emo{#1}'}%

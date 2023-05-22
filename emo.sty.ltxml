@@ -6,7 +6,7 @@ use warnings;
 use LaTeXML::Package;
 RawTeX(<<'EOTeX');
 \ProvidesPackage{emo}
-    [2023/99/99 v1.0 emo•ji for all (LaTeX engines)]
+    [2023/05/22 v1.0 emo•ji for all (LaTeX engines)]
 \newif\ifEmojiExtra
 EOTeX
 DeclareOption('extra', '\EmojiExtratrue');
